@@ -1,6 +1,9 @@
 import os
 from datetime import datetime
 import json
+import sys
+# sys.path.append("..")
+
 
 def create_experiment_folder(base_dir="logs", metadata=None):
     """
@@ -28,3 +31,6 @@ def create_experiment_folder(base_dir="logs", metadata=None):
             json.dump(metadata, f, indent=4)
 
     return paths
+
+
+

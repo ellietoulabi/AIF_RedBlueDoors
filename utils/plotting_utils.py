@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-def plot_average_episode_return_across_seeds(log_paths, NUM_SEEDS, window=50):
+def plot_average_episode_return_across_seeds(log_paths, NUM_SEEDS, window=50, agent_names=['aif_reward', 'ql_reward']):
 
     dfs = []
     for seed in range(NUM_SEEDS):
@@ -15,41 +15,42 @@ def plot_average_episode_return_across_seeds(log_paths, NUM_SEEDS, window=50):
 
     # 1️⃣ Compute total return per episode per seed (sum rewards across steps)
     episode_returns = (
-        all_data.groupby(['seed', 'episode'])[['ql_reward', 'random_reward']]
+        all_data.groupby(['seed', 'episode'])[[agent_names[0], agent_names[1]]]
         .sum()
         .reset_index()
     )
 
     # 2️⃣ Compute mean and SEM across seeds
-    mean_returns = episode_returns.groupby('episode')[['ql_reward', 'random_reward']].mean()
-    sem_returns = episode_returns.groupby('episode')[['ql_reward', 'random_reward']].sem()
+    mean_returns = episode_returns.groupby('episode')[[agent_names[0], agent_names[1]]].mean()
+    sem_returns = episode_returns.groupby('episode')[[agent_names[0], agent_names[1]]].sem()
 
     # 3️⃣ Compute 95% CI
     ci95 = 1.96 * sem_returns
 
     # 4️⃣ Optional smoothing
-    mean_returns['ql_reward_smooth'] = mean_returns['ql_reward'].rolling(window, min_periods=1).mean()
-    mean_returns['random_reward_smooth'] = mean_returns['random_reward'].rolling(window, min_periods=1).mean()
+    mean_returns[f"{agent_names[0]}_smooth"] = mean_returns[agent_names[0]].rolling(window, min_periods=1).mean()
+    mean_returns[f"{agent_names[1]}_smooth"] = mean_returns[agent_names[1]].rolling(window, min_periods=1).mean()
 
-    ci95['ql_reward_smooth'] = ci95['ql_reward'].rolling(window, min_periods=1).mean()
-    ci95['random_reward_smooth'] = ci95['random_reward'].rolling(window, min_periods=1).mean()
+    ci95[f"{agent_names[0]}_smooth"] = ci95[agent_names[0]].rolling(window, min_periods=1).mean()
+    ci95[f"{agent_names[1]}_smooth"] = ci95[agent_names[1]].rolling(window, min_periods=1).mean()
 
     # 5️⃣ Plot
     plt.figure(figsize=(12, 6))
 
-    plt.plot(mean_returns.index, mean_returns['random_reward_smooth'], label='Random Mean Return', color='green')
+    plt.plot(mean_returns.index, mean_returns[f"{agent_names[0]}_smooth"], label=f"{agent_names[0]} Return", color='green')
     plt.fill_between(
         mean_returns.index,
-        mean_returns['random_reward_smooth'] - ci95['random_reward_smooth'],
-        mean_returns['random_reward_smooth'] + ci95['random_reward_smooth'],
+        np.float64(mean_returns[f"{agent_names[0]}_smooth"] - ci95[f"{agent_names[0]}_smooth"]),
+        np.float64(mean_returns[f"{agent_names[0]}_smooth"] - ci95[f"{agent_names[0]}_smooth"]),
+        mean_returns[f"{agent_names[0]}_smooth"] + ci95[f"{agent_names[0]}_smooth"],
         color='green', alpha=0.2
     )
 
-    plt.plot(mean_returns.index, mean_returns['ql_reward_smooth'], label='QL Mean Return', color='orange')
+    plt.plot(mean_returns.index, mean_returns[f"{agent_names[1]}_smooth"], label=f"{agent_names[1]} Return", color='orange')
     plt.fill_between(
         mean_returns.index,
-        mean_returns['ql_reward_smooth'] - ci95['ql_reward_smooth'],
-        mean_returns['ql_reward_smooth'] + ci95['ql_reward_smooth'],
+        np.float64(mean_returns[f"{agent_names[1]}_smooth"] - ci95[f"{agent_names[1]}_smooth"]),
+        np.float64(mean_returns[f"{agent_names[1]}_smooth"] + ci95[f"{agent_names[1]}_smooth"]),
         color='orange', alpha=0.2
     )
 

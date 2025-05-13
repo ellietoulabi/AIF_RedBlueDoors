@@ -6,7 +6,8 @@ from gym import spaces
 
 import logging
 
-
+import sys
+# sys.path.append("../..")
 class RedBlueDoorEnv(ParallelEnv):
     """
     Multi-Agent Red-Blue Door Environment (Ordinal Task) using PettingZoo

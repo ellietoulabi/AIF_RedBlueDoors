@@ -25,7 +25,7 @@ metadata = {
     "date": "2024-04-28",
     "map_config": ["configs/config.json", "configs/config2.json"],
     "seeds": 5,
-    "max_steps": 150,
+    "max_steps": 100,
     "episodes": 100
     
 }
@@ -160,7 +160,7 @@ all_results = []
 for seed in seeds:
     q_table_file = os.path.join(log_paths["root"],f"q_table_seed_{seed}.json")
     log_file = os.path.join(log_paths["infos"],f"log_seed_{seed}.csv")
-    rewards_aif, rewards_ql = run_experiment(seed, q_table_file, log_file, 2000, 100)
+    rewards_aif, rewards_ql = run_experiment(seed, q_table_file, log_file, 100, 100)
 
     for ep, (ra, rq) in enumerate(zip(rewards_aif, rewards_ql)):
         all_results.append(

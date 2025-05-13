@@ -1,0 +1,7 @@
+gym
+numpy== 1.24.0
+pettingzoo
+matplotlib
+imageio
+inferactively-pymdp
+tqdm
