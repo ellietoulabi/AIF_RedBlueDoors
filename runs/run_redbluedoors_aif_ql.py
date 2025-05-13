@@ -29,7 +29,9 @@ metadata = {
     "episodes": 100
     
 }
-
+# log_paths = {"root": "../logs/run_20250513_120459",
+# "plots": "../logs/run_20250513_120459/plots",
+# "infos": "../logs/run_20250513_120459/infos"}
 log_paths = create_experiment_folder(base_dir="../logs", metadata=metadata)
 print("Logging folders:")
 for k, v in log_paths.items():
@@ -169,5 +171,5 @@ for seed in seeds:
 
 
 
-plot_average_episode_return_across_seeds(log_paths, metadata["seeds"], window=10,agent_names=['aif_reward', 'ql_reward'])
+plot_average_episode_return_across_seeds(log_paths, metadata["seeds"], window=5,agent_names=['aif_reward', 'ql_reward'])
 print("Experiment completed. Results saved.")
