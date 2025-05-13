@@ -1,3 +1,40 @@
+import os
+import csv
+import random
+import numpy as np
+import copy
+from tqdm import trange
+import sys
+
+from pymdp.agent import Agent
+
+sys.path.append("..")
+from envs.redbluedoors_env.ma_redbluedoors import RedBlueDoorEnv
+from agents.ql import QLearningAgent
+from agents.aif_models import model_2
+from agents.aif_models.model_2 import convert_obs_to_active_inference_format
+from utils.env_utils import get_config_path
+from utils.logging_utils import create_experiment_folder
+from utils.plotting_utils import plot_average_episode_return_across_seeds
+
+
+metadata = {
+    "description": "Experiment comparing AIF and Q-learning agents in the Red-Blue Doors environment.",
+    "agents": ["AIF", "Q-learning"],
+    "environment": "Red-Blue Doors",
+    "date": "2024-04-28",
+    "map_config": ["configs/config.json", "configs/config2.json"],
+    "seeds": 5,
+    "max_steps": 150,
+    "episodes": 100
+    
+}
+
+log_paths = create_experiment_folder(base_dir="../logs", metadata=metadata)
+print("Logging folders:")
+for k, v in log_paths.items():
+    print(f"{k}: {v}")
+
 def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150):
     np.random.seed(seed)
     random.seed(seed)
@@ -33,7 +70,7 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
             "ql_action",
             "aif_action",
             "ql_reward",
-            "aif_reward"
+            "aif_reward",
         ]
         writer = csv.writer(file)
         writer.writerow(fieldnames)
@@ -42,8 +79,8 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
     MAX_STEPS = max_steps
 
     config_paths = [
-        "envs/redbluedoors_env/configs/config.json",
-        "envs/redbluedoors_env/configs/config2.json",
+        "../envs/redbluedoors_env/configs/config.json",
+        "../envs/redbluedoors_env/configs/config2.json",
     ]
 
     reward_log_aif = []
@@ -79,7 +116,9 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
             next_state = ql_agent.get_state(obs)
 
             if rewards and next_state is not None:
-                ql_agent.update_q_table(state, action_dict, rewards, next_state, "agent_1")
+                ql_agent.update_q_table(
+                    state, action_dict, rewards, next_state, "agent_1"
+                )
 
             total_reward_aif += rewards.get("agent_0", 0)
             total_reward_ql += rewards.get("agent_1", 0)
@@ -88,15 +127,17 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
 
             with open(log_filename, "a", newline="") as file:
                 writer = csv.writer(file)
-                writer.writerow([
-                    seed,
-                    episode,
-                    step,
-                    int(next_action_ql),
-                    int(next_action_aif[0]),
-                    rewards.get("agent_1", 0),
-                    rewards.get("agent_0", 0)
-                ])
+                writer.writerow(
+                    [
+                        seed,
+                        episode,
+                        step,
+                        int(next_action_ql),
+                        int(next_action_aif[0]),
+                        rewards.get("agent_1", 0),
+                        rewards.get("agent_0", 0),
+                    ]
+                )
 
             if any(terminations.values()) or any(truncations.values()):
                 break
@@ -113,17 +154,20 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
     return reward_log_aif, reward_log_ql
 
 
-
-
-
-
 seeds = [0, 1, 2, 3, 4]  # or as many as you want
 all_results = []
 
 for seed in seeds:
-    q_table_file = f"q_table_seed_{seed}.json"
-    log_file = f"log_seed_{seed}.csv"
-    rewards_aif, rewards_ql = run_experiment(seed, q_table_file, log_file)
+    q_table_file = os.path.join(log_paths["root"],f"q_table_seed_{seed}.json")
+    log_file = os.path.join(log_paths["infos"],f"log_seed_{seed}.csv")
+    rewards_aif, rewards_ql = run_experiment(seed, q_table_file, log_file, 2000, 100)
 
     for ep, (ra, rq) in enumerate(zip(rewards_aif, rewards_ql)):
-        all_results.append({"seed": seed, "episode": ep, "aif_reward": ra, "ql_reward": rq})
+        all_results.append(
+            {"seed": seed, "episode": ep, "aif_reward": ra, "ql_reward": rq}
+        )
+
+
+
+plot_average_episode_return_across_seeds(log_paths, metadata["seeds"], window=10,agent_names=['aif_reward', 'ql_reward'])
+print("Experiment completed. Results saved.")
