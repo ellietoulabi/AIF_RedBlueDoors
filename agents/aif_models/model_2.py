@@ -387,8 +387,9 @@ def convert_obs_to_active_inference_format(obs):
     Converts raw PettingZoo observation to indices for the Active Inference modalities.
     Uses variables already defined in model_2.py (global scope).
     """
-    agent_obs = obs["agent_0"]
-    other_obs = obs["agent_1"]
+    agent0_obs = obs["agent_0"]
+    agent1_obs = obs["agent_1"]
+    
 
 
 
@@ -408,13 +409,13 @@ def convert_obs_to_active_inference_format(obs):
 
 
     # --- 1. Self position ---
-    agent_pos = tuple(agent_obs["position"])
+    agent_pos = tuple(agent0_obs["position"])
     self_pos_label = xy_to_pos_label.get(agent_pos, "pos_0")
     self_pos_idx = self_pos_modality.index(self_pos_label)
 
     # --- 2. Door state ---
-    red = agent_obs["red_door_opened"]
-    blue = agent_obs["blue_door_opened"]
+    red = obs["red_door_opened"]
+    blue = obs["blue_door_opened"]
     if red and blue:
         door_state_label = "red_open_blue_open"
     elif red:
@@ -426,11 +427,11 @@ def convert_obs_to_active_inference_format(obs):
     door_state_idx = door_state_modality.index(door_state_label)
 
     # --- 3. Near door ---
-    near_door_label = "near_door" if agent_obs["near_door"] else "not_near_door"
+    near_door_label = "near_door" if agent0_obs["near_door"] else "not_near_door"
     near_door_idx = near_door_modality.index(near_door_label)
 
     # --- 4. Other agent position ---
-    other_pos = tuple(other_obs["position"])
+    other_pos = tuple(agent1_obs["position"])
     other_pos_label = xy_to_pos_label.get(other_pos, "pos_0")
     other_pos_idx = other_pos_modality.index(other_pos_label)
 

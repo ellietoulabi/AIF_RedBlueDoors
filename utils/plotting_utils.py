@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-def plot_average_episode_return_across_seeds(log_paths, NUM_SEEDS, window=50, agent_names=['aif_reward', 'ql_reward']):
+def plot_average_episode_return_across_seeds(log_paths, NUM_SEEDS, window=50, agent_names=['aif_reward', 'ql_reward'],k=20):
 
     dfs = []
     for seed in range(NUM_SEEDS):
@@ -61,9 +61,49 @@ def plot_average_episode_return_across_seeds(log_paths, NUM_SEEDS, window=50, ag
     plt.grid(True)
 
     # Vertical lines every 50 episodes to mark environment switches
-    for ep in range(0, mean_returns.index.max() + 1, 50):
+    for ep in range(0, mean_returns.index.max() + 1, k):
         plt.axvline(x=ep, color='grey', linestyle='--', alpha=0.5)
 
     plt.tight_layout()
     plt.savefig(os.path.join(log_paths["plots"], "average_returns_per_episode.png"))
     plt.show()
+
+
+
+
+def plot_episode_return_for_one_seed_csv(csv_path, agent_cols=["aif_reward", "rand_reward"], save_path=None, smooth_window=50):
+    """
+    Plot return per episode for one seed file.
+    
+    Args:
+        csv_path (str): Path to the CSV file.
+        agent_cols (list): List of columns containing reward per step (e.g., ["ql_reward", "random_reward"]).
+        save_path (str or None): If given, saves the plot to this path.
+    """
+    # Load CSV
+    df = pd.read_csv(csv_path)
+
+    # Compute return per episode
+    episode_returns = df.groupby("episode")[agent_cols].sum()
+
+    # Apply smoothing
+    smoothed_returns = episode_returns.rolling(window=smooth_window, min_periods=1).mean()
+
+    # Plot
+    plt.figure(figsize=(12, 6))
+    for col in agent_cols:
+        plt.plot(
+            episode_returns.index,
+            smoothed_returns[col],
+            label=f"{col} (smoothed)",
+        )
+
+    plt.xlabel("Episode")
+    plt.ylabel("Smoothed Return")
+    plt.title("Episode Return per Agent (Smoothed)")
+    plt.legend()
+    plt.grid(True)
+    
+    plt.savefig(save_path)
+    print(f"Plot saved to: {save_path}")
+    

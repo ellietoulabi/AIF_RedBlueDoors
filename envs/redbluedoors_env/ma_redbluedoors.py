@@ -1,4 +1,3 @@
-
 from pettingzoo.utils.env import ParallelEnv
 import numpy as np
 import json, copy
@@ -7,6 +6,8 @@ from gym import spaces
 import logging
 
 import sys
+
+
 # sys.path.append("../..")
 class RedBlueDoorEnv(ParallelEnv):
     """
@@ -61,13 +62,16 @@ class RedBlueDoorEnv(ParallelEnv):
 
     def state(self):
         return {
-            agent: {
-                "position": copy.deepcopy(self.agent_positions[agent]),
-                "red_door_opened": self.red_door_opened,
-                "blue_door_opened": self.blue_door_opened,
-                "near_door": self._is_near_door(*self.agent_positions[agent]),
-            }
-            for agent in self.agents
+            "agent_0": {
+                "position": np.array(self.agent_positions["agent_0"], dtype=np.int32),
+                "near_door": int(self._is_near_door(*self.agent_positions["agent_0"])),
+            },
+            "agent_1": {
+                "position": np.array(self.agent_positions["agent_1"], dtype=np.int32),
+                "near_door": int(self._is_near_door(*self.agent_positions["agent_1"])),
+            },
+            "red_door_opened": int(self.red_door_opened),
+            "blue_door_opened": int(self.blue_door_opened),
         }
 
     def step(self, actions):
@@ -75,12 +79,26 @@ class RedBlueDoorEnv(ParallelEnv):
         rewards = {agent: -0.01 for agent in self.agents}
         terminations = {agent: False for agent in self.agents}
         truncations = {agent: False for agent in self.agents}
-        infos = {agent: {} for agent in self.agents}
+        infos = {
+            "step": None,
+            "agent_0": {
+                "action": None,
+                "action_meaning": None,
+                "reward": None,
+                "cumulative_reward": None,
+            },
+            "agent_1": {
+                "action": None,
+                "action_meaning": None,
+                "reward": None,
+                "cumulative_reward": None,
+            },
+            "map": None,
+        }
 
-        curr_positions = copy.deepcopy(self.agent_positions)
         for agent, action in actions.items():
             if action in [0, 1, 2, 3]:
-                x, y = curr_positions[agent]
+                x, y = self.agent_positions[agent]
                 dx, dy = 0, 0
                 if action == 0:
                     dy = -1
@@ -91,20 +109,23 @@ class RedBlueDoorEnv(ParallelEnv):
                 elif action == 3:
                     dx = 1
                 new_pos = (x + dx, y + dy)
-                if self._valid_move(new_pos, curr_positions.values()):
+                if self._valid_move(new_pos, self.agent_positions.values()):
                     self.agent_positions[agent] = new_pos
-                if self._is_near_door(x, y):
+                if self._is_near_door(
+                    self.agent_positions[agent][0], self.agent_positions[agent][1]
+                ):
                     rewards[agent] = 0.2
                     # print(f"Agent {agent} is near a door")
 
             elif action == 4:
-                x, y = curr_positions[agent]
+                x, y = self.agent_positions[agent]
                 if self._is_adjacent(x, y, self.red_door) and not self.red_door_opened:
                     self.red_door_opened = True
                     rewards[agent] = 0.5
                     # print("Red door opened first :)")
                 elif self._is_adjacent(x, y, self.blue_door):
                     if not self.red_door_opened:
+                        self.blue_door_opened = True
                         rewards = {a: -1.0 for a in self.agents}
                         terminations = {a: True for a in self.agents}
                         # self.agents = []
@@ -158,20 +179,24 @@ class RedBlueDoorEnv(ParallelEnv):
             self.cumulative_rewards[agent] = self.cumulative_rewards.get(agent, 0.0) + r
 
     def _fill_info(self, infos, actions, rewards):
-        for agent in infos:
-            infos[agent] = {
-                "step": self.step_count,
-                "action": actions.get(agent, None),
-                "action_meaning": self.ACTION_MEANING.get(
-                    actions.get(agent, None), "unknown"
-                ),
-                "reward": rewards.get(agent, 0.0),
-                "cumulative_reward": self.cumulative_rewards.get(agent, 0.0),
-                "position": self.agent_positions.get(agent, None),
-                "red_door_opened": self.red_door_opened,
-                "blue_door_opened": self.blue_door_opened,
-                "near_door": self._is_near_door(*self.agent_positions[agent]),
-            }
+        infos["step"] = self.step_count
+        infos["map"] = self.render()
+        infos["agent_0"] = {
+            "action": actions.get("agent_0", None),
+            "action_meaning": self.ACTION_MEANING.get(
+                actions.get("agent_0", None), "unknown"
+            ),
+            "reward": rewards.get("agent_0", 0.0),
+            "cumulative_reward": self.cumulative_rewards.get("agent_0", 0.0),
+        }
+        infos["agent_1"] = {
+            "action": actions.get("agent_1", None),
+            "action_meaning": self.ACTION_MEANING.get(
+                actions.get("agent_1", None), "unknown"
+            ),
+            "reward": rewards.get("agent_1", 0.0),
+            "cumulative_reward": self.cumulative_rewards.get("agent_1", 0.0),
+        }
 
     def _parse_map(self, map_data):
         """Parses a textual map representation and extracts positions."""
@@ -264,11 +289,14 @@ class RedBlueDoorEnv(ParallelEnv):
 
     def _get_obs(self):
         return {
-            agent: {
-                "position": np.array(self.agent_positions[agent], dtype=np.int32),
-                "red_door_opened": int(self.red_door_opened),
-                "blue_door_opened": int(self.blue_door_opened),
-                "near_door": int(self._is_near_door(*self.agent_positions[agent])),
-            }
-            for agent in self.agents
+            "agent_0": {
+                "position": np.array(self.agent_positions["agent_0"], dtype=np.int32),
+                "near_door": int(self._is_near_door(*self.agent_positions["agent_0"])),
+            },
+            "agent_1": {
+                "position": np.array(self.agent_positions["agent_1"], dtype=np.int32),
+                "near_door": int(self._is_near_door(*self.agent_positions["agent_1"])),
+            },
+            "red_door_opened": int(self.red_door_opened),
+            "blue_door_opened": int(self.blue_door_opened),
         }
