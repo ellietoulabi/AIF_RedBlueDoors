@@ -56,23 +56,19 @@ class QLearningAgent:
     
     def get_state(self, obs):
         if "agent_0" not in obs or "agent_1" not in obs:
-            return None  # or return a sentinel like "terminal"
+            return None  # or return a sentinel like "termina
+        
         
         a0 = obs["agent_0"]
         a1 = obs["agent_1"]
         pos0 = tuple(a0["position"])
         pos1 = tuple(a1["position"])
-        red = a0["red_door_opened"]
-        blue = a0["blue_door_opened"]
+        red = obs["red_door_opened"]
+        blue = obs["blue_door_opened"]
         near0 = a0["near_door"]
         near1 = a1["near_door"]
         
-        door_state_modality = [
-            "red_closed_blue_closed",
-            "red_open_blue_closed",
-            "red_closed_blue_open",
-            "red_open_blue_open",
-        ]
+       
         door_state = None
         if red and blue:
             door_state = 3
