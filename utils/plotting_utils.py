@@ -41,8 +41,7 @@ def plot_average_episode_return_across_seeds(log_paths, NUM_SEEDS, window=50, ag
     plt.fill_between(
         mean_returns.index,
         np.float64(mean_returns[f"{agent_names[0]}_smooth"] - ci95[f"{agent_names[0]}_smooth"]),
-        np.float64(mean_returns[f"{agent_names[0]}_smooth"] - ci95[f"{agent_names[0]}_smooth"]),
-        mean_returns[f"{agent_names[0]}_smooth"] + ci95[f"{agent_names[0]}_smooth"],
+        np.float64(mean_returns[f"{agent_names[0]}_smooth"] + ci95[f"{agent_names[0]}_smooth"]),
         color='green', alpha=0.2
     )
 

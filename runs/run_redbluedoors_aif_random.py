@@ -156,5 +156,8 @@ for seed in seeds:
 
 
 
-plot_average_episode_return_across_seeds(log_paths, metadata["seeds"], window=5,agent_names=['aif_reward', 'rand_reward'])
+plot_average_episode_return_across_seeds(log_paths, metadata["seeds"], window=5,agent_names=['rand_reward', 'ql_reward'])
+
+
+
 print("Experiment completed. Results saved.")
