@@ -15,12 +15,11 @@ from agents.aif_models.model_2 import convert_obs_to_active_inference_format
 from utils.env_utils import get_config_path
 from utils.logging_utils import create_experiment_folder
 from utils.plotting_utils import plot_average_episode_return_across_seeds
-from utils.plotting_utils import plot_step_return_for_one_seed_csv
 
 
 metadata = {
-    "description": "Experiment comparing AIF and Random agents in the Red-Blue Doors environment.",
-    "agents": ["AIF", "Random"],
+    "description": "Experiment comparing AIF and Stay agents in the Red-Blue Doors environment.",
+    "agents": ["AIF", "Stay"],
     "environment": "Red-Blue Doors",
     "date": "2024-04-28",
     "map_config": ["configs/config.json", "configs/config2.json"],
@@ -64,9 +63,9 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
             "episode",
             "step",
             "aif_action",
-            "rand_action",
+            "stay_action",
             "aif_reward",
-            "rand_reward",
+            "stay_reward",
         ]
         writer = csv.writer(file)
         writer.writerow(fieldnames)
@@ -83,7 +82,7 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
     reward_log_rand = []
 
     for episode in trange(EPISODES, desc=f"Seed {seed} Training"):
-        config_path = get_config_path(config_paths, episode,k=5, alternate=False)
+        config_path = get_config_path(config_paths, episode,k=5)
         env = RedBlueDoorEnv(max_steps=MAX_STEPS, config_path=config_path)
         obs, _ = env.reset()
         aif_obs = convert_obs_to_active_inference_format(obs)
@@ -99,7 +98,7 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
             q_pi, G = aif_agent.infer_policies()
 
             next_action_aif = aif_agent.sample_action()
-            next_action_rand = np.random.choice(len(env.ACTION_MEANING))
+            next_action_rand = 1
 
             action_dict = {
                 "agent_0": int(next_action_aif[0]),
@@ -142,24 +141,23 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
     return reward_log_aif, reward_log_rand
 
 
-# seeds = [0, 1, 2, 3, 4]  # or as many as you want
-seeds=[0]
+seeds = [0, 1, 2, 3, 4]  # or as many as you want
 all_results = []
 
 for seed in seeds:
     q_table_file = os.path.join(log_paths["root"],f"q_table_seed_{seed}.json")
     log_file = os.path.join(log_paths["infos"],f"log_seed_{seed}.csv")
-    rewards_aif, rewards_rand = run_experiment(seed, q_table_file, log_file, 10, 150)
+    rewards_aif, rewards_rand = run_experiment(seed, q_table_file, log_file, 20, 150)
 
     for ep, (ra, rr) in enumerate(zip(rewards_aif, rewards_rand)):
         all_results.append(
-            {"seed": seed, "episode": ep, "aif_reward": ra, "rand_reward": rr}
+            {"seed": seed, "episode": ep, "aif_reward": ra, "stay_reward": rr}
         )
 
 
 
-# plot_average_episode_return_across_seeds(log_paths, metadata["seeds"], window=5,agent_names=['aif_reward', 'rand_reward'],k=5)
-plot_step_return_for_one_seed_csv(os.path.join(log_paths["infos"],f"log_seed_0.csv"), agent_cols=["aif_reward", "rand_reward"], save_path=None, smooth_window=1)
+plot_average_episode_return_across_seeds(log_paths, metadata["seeds"], window=5,agent_names=['aif_reward', 'stay_reward'],k=5)
+
 
 
 print("Experiment completed. Results saved.")
