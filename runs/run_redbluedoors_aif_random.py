@@ -26,8 +26,7 @@ metadata = {
     "map_config": ["configs/config.json", "configs/config2.json"],
     "seeds": 5,
     "max_steps": 150,
-    "episodes": 100
-    
+    "episodes": 100,
 }
 # log_paths = {"root": "../logs/run_20250513_120459",
 # "plots": "../logs/run_20250513_120459/plots",
@@ -36,6 +35,7 @@ log_paths = create_experiment_folder(base_dir="../logs", metadata=metadata)
 print("Logging folders:")
 for k, v in log_paths.items():
     print(f"{k}: {v}")
+
 
 def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150):
     np.random.seed(seed)
@@ -56,7 +56,6 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
         alpha=0.1,
     )
 
-
     # Logging
     with open(log_filename, mode="w", newline="") as file:
         fieldnames = [
@@ -76,14 +75,14 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
 
     config_paths = [
         "../envs/redbluedoors_env/configs/config.json",
-        "../envs/redbluedoors_env/configs/config2.json",
+        # "../envs/redbluedoors_env/configs/config2.json",
     ]
 
     reward_log_aif = []
     reward_log_rand = []
 
     for episode in trange(EPISODES, desc=f"Seed {seed} Training"):
-        config_path = get_config_path(config_paths, episode,k=5, alternate=False)
+        config_path = get_config_path(config_paths, episode, k=5, alternate=False)
         env = RedBlueDoorEnv(max_steps=MAX_STEPS, config_path=config_path)
         obs, _ = env.reset()
         aif_obs = convert_obs_to_active_inference_format(obs)
@@ -108,10 +107,8 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
 
             obs, rewards, terminations, truncations, infos = env.step(action_dict)
 
-
             total_reward_aif += rewards.get("agent_0", 0)
             total_reward_rand += rewards.get("agent_1", 0)
-
 
             with open(log_filename, "a", newline="") as file:
                 writer = csv.writer(file)
@@ -124,7 +121,6 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
                         int(next_action_rand),
                         rewards.get("agent_0", 0),
                         rewards.get("agent_1", 0),
-                        
                     ]
                 )
 
@@ -132,7 +128,6 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
                 break
 
             aif_obs = convert_obs_to_active_inference_format(obs)
-
 
         reward_log_aif.append(total_reward_aif)
         reward_log_rand.append(total_reward_rand)
@@ -143,13 +138,13 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
 
 
 # seeds = [0, 1, 2, 3, 4]  # or as many as you want
-seeds=[0]
+seeds = [0]
 all_results = []
 
 for seed in seeds:
-    q_table_file = os.path.join(log_paths["root"],f"q_table_seed_{seed}.json")
-    log_file = os.path.join(log_paths["infos"],f"log_seed_{seed}.csv")
-    rewards_aif, rewards_rand = run_experiment(seed, q_table_file, log_file, 10, 150)
+    q_table_file = os.path.join(log_paths["root"], f"q_table_seed_{seed}.json")
+    log_file = os.path.join(log_paths["infos"], f"log_seed_{seed}.csv")
+    rewards_aif, rewards_rand = run_experiment(seed, q_table_file, log_file, 100, 150)
 
     for ep, (ra, rr) in enumerate(zip(rewards_aif, rewards_rand)):
         all_results.append(
@@ -157,9 +152,13 @@ for seed in seeds:
         )
 
 
-
-# plot_average_episode_return_across_seeds(log_paths, metadata["seeds"], window=5,agent_names=['aif_reward', 'rand_reward'],k=5)
-plot_step_return_for_one_seed_csv(os.path.join(log_paths["infos"],f"log_seed_0.csv"), agent_cols=["aif_reward", "rand_reward"], save_path=None, smooth_window=1)
+plot_average_episode_return_across_seeds(log_paths, 1, window=1,agent_names=['aif_reward', 'rand_reward'],k=5)
+# plot_step_return_for_one_seed_csv(
+#     os.path.join(log_paths["infos"], f"log_seed_0.csv"),
+#     agent_cols=["aif_reward", "rand_reward"],
+#     save_path=None
+   
+# )
 
 
 print("Experiment completed. Results saved.")
