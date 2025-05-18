@@ -1,5 +1,4 @@
 .venv/
 logs/
-utils/__pycache__/
-envs/__pycache__/
-agents/__pycache__/
+
+**/__pycache__/
