@@ -3,7 +3,6 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16G
 #SBATCH --time=0-2:59
-#SBATCH --salloc cpu-freq=Performance
 
 module purge
 module load python/3.11.4  scipy-stack
@@ -38,6 +37,10 @@ cd ../project/AIF_RedBlueDoors/
 pip install -r requirements.txt
 echo "Dependencies installed"
 
+echo "Creating logs directory..."
+mkdir logs
+echo "Logs directory created"
+
 
 echo "Running experiment..."
 cd runs
@@ -47,7 +50,8 @@ echo "Experiment done"
 
 echo "Copying logs to home directory..."
 cd ..
-cp -r logs /home/toulabin/projects/def-jrwright/toulabin/AIF_RedBlueDoors/
+zip -r logs.zip logs
+cp  logs.zip /home/toulabin/projects/def-jrwright/toulabin/logs
 echo "Copy done"
 
 

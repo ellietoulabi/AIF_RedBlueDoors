@@ -110,9 +110,55 @@ def plot_episode_return_for_one_seed_csv(csv_path, agent_cols=["aif_reward", "ra
     
 
 
-def plot_step_return_for_one_seed_csv(csv_path, agent_cols=["aif_reward", "rand_reward"], save_path=None, smooth_window=50):
+# def plot_step_return_for_one_seed_csv(csv_path, agent_cols=["aif_reward", "rand_reward"], save_path=None, smooth_window=50):
+#     """
+#     Plot return per step for one seed file, with vertical lines separating episodes.
+    
+#     Args:
+#         csv_path (str): Path to the CSV file.
+#         agent_cols (list): List of columns containing reward per step (e.g., ["ql_reward", "random_reward"]).
+#         save_path (str or None): If given, saves the plot to this path.
+#     """
+#     # Load CSV
+#     df = pd.read_csv(csv_path)
+
+#     # Compute return per step
+#     df['step_return'] = df[agent_cols].cumsum(axis=1)
+
+#     # Apply smoothing
+#     # smoothed_returns = df['step_return'].rolling(window=smooth_window, min_periods=1).mean()
+
+#     # Plot
+#     plt.figure(figsize=(12, 6))
+#     plt.plot(df.index, df['step_return'], label="Smoothed Step Return", color='b')
+
+#     # Add vertical lines to separate episodes
+#     episode_starts = df[df['episode'] != df['episode'].shift(1)].index
+#     for episode_start in episode_starts:
+#         plt.axvline(x=episode_start, color='r', linestyle='--', label="Episode Boundary" if episode_start == episode_starts[0] else "")
+
+#     plt.xlabel("Step")
+#     plt.ylabel(" Return")
+#     plt.title("Step Return per Agent with Episode Boundaries")
+#     plt.legend(loc='upper right')
+#     plt.grid(True)
+
+#     # Save or show the plot
+#     if save_path:
+#         plt.savefig(save_path)
+#         print(f"Plot saved to: {save_path}")
+#     else:
+#         plt.show()
+
+
+
+
+
+
+
+def plot_step_return_for_one_seed_csv(csv_path, agent_cols=["aif_reward", "rand_reward"], save_path=None):
     """
-    Plot return per step for one seed file, with vertical lines separating episodes.
+    Plot cumulative reward (return) per step for one seed file, with vertical lines separating episodes.
     
     Args:
         csv_path (str): Path to the CSV file.
@@ -122,15 +168,15 @@ def plot_step_return_for_one_seed_csv(csv_path, agent_cols=["aif_reward", "rand_
     # Load CSV
     df = pd.read_csv(csv_path)
 
-    # Compute return per step
-    df['step_return'] = df[agent_cols].sum(axis=1)
+    # Compute reward per step (sum of rewards for each agent column)
+    df['step_reward'] = df[agent_cols].sum(axis=1)
 
-    # Apply smoothing
-    # smoothed_returns = df['step_return'].rolling(window=smooth_window, min_periods=1).mean()
+    # Compute cumulative reward (return) per step
+    df['cumulative_reward'] = df['step_reward'].cumsum()
 
-    # Plot
+    # Plot the cumulative reward for each step
     plt.figure(figsize=(12, 6))
-    plt.plot(df.index, df['step_return'], label="Smoothed Step Return", color='b')
+    plt.plot(df.index, df['cumulative_reward'], label="Cumulative Reward", color='b')
 
     # Add vertical lines to separate episodes
     episode_starts = df[df['episode'] != df['episode'].shift(1)].index
@@ -138,9 +184,9 @@ def plot_step_return_for_one_seed_csv(csv_path, agent_cols=["aif_reward", "rand_
         plt.axvline(x=episode_start, color='r', linestyle='--', label="Episode Boundary" if episode_start == episode_starts[0] else "")
 
     plt.xlabel("Step")
-    plt.ylabel(" Return")
-    plt.title("Step Return per Agent with Episode Boundaries")
-    plt.legend(loc='upper right')
+    plt.ylabel("Cumulative Reward")
+    plt.title("Cumulative Reward per Step with Episode Boundaries")
+    plt.legend(loc='upper left')
     plt.grid(True)
 
     # Save or show the plot
@@ -149,4 +195,3 @@ def plot_step_return_for_one_seed_csv(csv_path, agent_cols=["aif_reward", "rand_
         print(f"Plot saved to: {save_path}")
     else:
         plt.show()
-
