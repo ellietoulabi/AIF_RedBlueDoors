@@ -123,11 +123,18 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
                         rewards.get("agent_1", 0),
                     ]
                 )
+                
+            aif_obs = convert_obs_to_active_inference_format(obs)
 
             if any(terminations.values()) or any(truncations.values()):
+                qs = aif_agent.infer_states(aif_obs)
+                q_pi, G = aif_agent.infer_policies()
+                aif_agent.D = qs
+                aif_agent.G = G
+                aif_agent.qs = qs
+                aif_agent.q_pi = q_pi
                 break
 
-            aif_obs = convert_obs_to_active_inference_format(obs)
 
         reward_log_aif.append(total_reward_aif)
         reward_log_rand.append(total_reward_rand)
@@ -144,7 +151,7 @@ all_results = []
 for seed in seeds:
     q_table_file = os.path.join(log_paths["root"], f"q_table_seed_{seed}.json")
     log_file = os.path.join(log_paths["infos"], f"log_seed_{seed}.csv")
-    rewards_aif, rewards_rand = run_experiment(seed, q_table_file, log_file, 100, 150)
+    rewards_aif, rewards_rand = run_experiment(seed, q_table_file, log_file, 2000, 150)
 
     for ep, (ra, rr) in enumerate(zip(rewards_aif, rewards_rand)):
         all_results.append(
