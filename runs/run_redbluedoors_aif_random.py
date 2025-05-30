@@ -28,9 +28,18 @@ metadata = {
     "max_steps": 150,
     "episodes": 100,
 }
-# log_paths = {"root": "../logs/run_20250513_120459",
-# "plots": "../logs/run_20250513_120459/plots",
-# "infos": "../logs/run_20250513_120459/infos"}
+# log_paths = {"root": "../logs/run_20250526_085532",
+# "plots": "../logs/run_20250526_085532/plots",
+# "infos": "../logs/run_20250526_085532/infos"}
+
+# plot_step_return_for_one_seed_csv(
+#     os.path.join(log_paths["infos"], f"log_seed_0.csv"),
+#     agent_cols=["aif_reward", "rand_reward"],
+#     save_path=None
+   
+# )
+
+# exit()
 log_paths = create_experiment_folder(base_dir="../logs", metadata=metadata)
 print("Logging folders:")
 for k, v in log_paths.items():
@@ -66,6 +75,9 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
             "rand_action",
             "aif_reward",
             "rand_reward",
+            "qs",
+            "q_pi",
+            "G",
         ]
         writer = csv.writer(file)
         writer.writerow(fieldnames)
@@ -75,14 +87,14 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
 
     config_paths = [
         "../envs/redbluedoors_env/configs/config.json",
-        # "../envs/redbluedoors_env/configs/config2.json",
+        "../envs/redbluedoors_env/configs/config2.json",
     ]
 
     reward_log_aif = []
     reward_log_rand = []
 
     for episode in trange(EPISODES, desc=f"Seed {seed} Training"):
-        config_path = get_config_path(config_paths, episode, k=5, alternate=False)
+        config_path = get_config_path(config_paths, episode, k=5, alternate=True)
         env = RedBlueDoorEnv(max_steps=MAX_STEPS, config_path=config_path)
         obs, _ = env.reset()
         aif_obs = convert_obs_to_active_inference_format(obs)
@@ -121,6 +133,9 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
                         int(next_action_rand),
                         rewards.get("agent_0", 0),
                         rewards.get("agent_1", 0),
+                        qs,
+                        q_pi,
+                        G,
                     ]
                 )
                 
@@ -151,7 +166,7 @@ all_results = []
 for seed in seeds:
     q_table_file = os.path.join(log_paths["root"], f"q_table_seed_{seed}.json")
     log_file = os.path.join(log_paths["infos"], f"log_seed_{seed}.csv")
-    rewards_aif, rewards_rand = run_experiment(seed, q_table_file, log_file, 2000, 150)
+    rewards_aif, rewards_rand = run_experiment(seed, q_table_file, log_file, 25, 150)
 
     for ep, (ra, rr) in enumerate(zip(rewards_aif, rewards_rand)):
         all_results.append(
@@ -160,12 +175,13 @@ for seed in seeds:
 
 
 plot_average_episode_return_across_seeds(log_paths, 1, window=1,agent_names=['aif_reward', 'rand_reward'],k=5)
-# plot_step_return_for_one_seed_csv(
-#     os.path.join(log_paths["infos"], f"log_seed_0.csv"),
-#     agent_cols=["aif_reward", "rand_reward"],
-#     save_path=None
+plot_step_return_for_one_seed_csv(
+    os.path.join(log_paths["infos"], f"log_seed_0.csv"),
+    agent_cols=["aif_reward", "rand_reward"],
+    save_path=None
    
-# )
+)
+
 
 
 print("Experiment completed. Results saved.")

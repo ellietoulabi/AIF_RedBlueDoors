@@ -151,7 +151,7 @@ if VERBOSE:
 A = pymdp_utils.initialize_empty_A(num_obs, num_states)
 
 
-noise_level = 0.1  # 5% probability mass spread over incorrect observations
+noise_level = 0.2  # 5% probability mass spread over incorrect observations
 
 # self_pos_modality
 num_self_pos = len(self_pos_modality)
