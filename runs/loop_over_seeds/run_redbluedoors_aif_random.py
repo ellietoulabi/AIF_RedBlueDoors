@@ -1,31 +1,54 @@
-
-import argparse
 import os
 import csv
 import random
 import numpy as np
 import copy
 from tqdm import trange
-from datetime import datetime
 import sys
-sys.path.append("..")
 
 from pymdp.agent import Agent
 
+sys.path.append("..")
 from envs.redbluedoors_env.ma_redbluedoors import RedBlueDoorEnv
-
+from agents.aif_models import model_2
+from agents.aif_models.model_2 import convert_obs_to_active_inference_format
 from utils.env_utils import get_config_path
 from utils.logging_utils import create_experiment_folder
 from utils.plotting_utils import plot_average_episode_return_across_seeds
 from utils.plotting_utils import plot_step_return_for_one_seed_csv
 from utils.plotting_utils import debug_plot_inference_step
 
+metadata = {
+    "description": "Experiment comparing AIF and Random agents in the Red-Blue Doors environment.",
+    "agents": ["AIF", "Random"],
+    "environment": "Red-Blue Doors",
+    "date": "2024-04-28",
+    "map_config": ["configs/config.json", "configs/config2.json"],
+    "seeds": 5,
+    "max_steps": 150,
+    "episodes": 100,
+}
+# log_paths = {"root": "../logs/run_20250526_085532",
+# "plots": "../logs/run_20250526_085532/plots",
+# "infos": "../logs/run_20250526_085532/infos"}
 
-def run_experiment(seed, q_table_path, log_filename, episodes=2000, max_steps=150):
-    print(np.random.seed(seed))
-    print(random.seed(seed))
-    from agents.aif_models import model_2
-    from agents.aif_models.model_2 import convert_obs_to_active_inference_format
+# plot_step_return_for_one_seed_csv(
+#     os.path.join(log_paths["infos"], f"log_seed_0.csv"),
+#     agent_cols=["aif_reward", "rand_reward"],
+#     save_path=None
+   
+# )
+
+# exit()
+log_paths = create_experiment_folder(base_dir="../logs", metadata=metadata)
+print("Logging folders:")
+for k, v in log_paths.items():
+    print(f"{k}: {v}")
+
+
+def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150):
+    np.random.seed(seed)
+    random.seed(seed)
 
     # Re-create the agents fresh for each seed
     aif_agent = Agent(
@@ -60,7 +83,8 @@ def run_experiment(seed, q_table_path, log_filename, episodes=2000, max_steps=15
         writer = csv.writer(file)
         writer.writerow(fieldnames)
 
-    
+    EPISODES = episodes
+    MAX_STEPS = max_steps
 
     config_paths = [
         "../envs/redbluedoors_env/configs/config.json",
@@ -70,9 +94,9 @@ def run_experiment(seed, q_table_path, log_filename, episodes=2000, max_steps=15
     reward_log_aif = []
     reward_log_rand = []
 
-    for episode in trange(episodes, desc=f"Seed {seed} Training"):
+    for episode in trange(EPISODES, desc=f"Seed {seed} Training"):
         config_path = get_config_path(config_paths, episode, k=5, alternate=True)
-        env = RedBlueDoorEnv(max_steps=max_steps, config_path=config_path)
+        env = RedBlueDoorEnv(max_steps=MAX_STEPS, config_path=config_path)
         obs, _ = env.reset()
         aif_obs = convert_obs_to_active_inference_format(obs)
         total_reward_aif = 0
@@ -80,7 +104,7 @@ def run_experiment(seed, q_table_path, log_filename, episodes=2000, max_steps=15
 
         aif_agent.D = copy.deepcopy(model_2.MODEL["D"])
 
-        for step in range(max_steps):
+        for step in range(MAX_STEPS):
 
             qs = aif_agent.infer_states(aif_obs)
             aif_agent.D = qs
@@ -149,77 +173,30 @@ def run_experiment(seed, q_table_path, log_filename, episodes=2000, max_steps=15
     return reward_log_aif, reward_log_rand
 
 
+seeds = [0, 1, 2, 3, 4]  # or as many as you want
+# seeds = [0]
+all_results = []
 
-def main():
+for seed in seeds:
+    q_table_file = os.path.join(log_paths["root"], f"q_table_seed_{seed}.json")
+    log_file = os.path.join(log_paths["infos"], f"log_seed_{seed}.csv")
     
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--seed",
-        type=int,
-        required=True,
-        help="Integer seed for this run"
-    )
-    parser.add_argument(
-        "--episodes",
-        type=int,
-        default=100,
-        help="Number of episodes (default=100)"
-    )
-    parser.add_argument(
-        "--max_steps",
-        type=int,
-        default=150,
-        help="Max steps per episode (default=150)"
-    )
-    args = parser.parse_args()
-    SEED      = args.seed
-    EPISODES  = args.episodes
-    MAX_STEPS = args.max_steps
-    
-        
-    metadata = {
-        "description": "Experiment comparing AIF and Random agents in the Red-Blue Doors environment.",
-        "agents": ["AIF", "Random"],
-        "environment": "Red-Blue Doors",
-        "datetime": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "map_config": ["configs/config.json", "configs/config2.json"],
-        "seed": SEED,
-        "max_steps": MAX_STEPS,
-        "episodes": EPISODES,
-    }
-    print(metadata)
+    rewards_aif, rewards_rand = run_experiment(seed, q_table_file, log_file, 100, 150)
 
-    log_paths = create_experiment_folder(base_dir="../logs", metadata=metadata)
-    print("Logging folders:")
-    for k, v in log_paths.items():
-        print(f"{k}: {v}")
+    for ep, (ra, rr) in enumerate(zip(rewards_aif, rewards_rand)):
+        all_results.append(
+            {"seed": seed, "episode": ep, "aif_reward": ra, "rand_reward": rr}
+        )
 
 
-    all_results = []
-    
-    q_table_file = os.path.join(log_paths["root"], f"q_table_seed_{SEED}.json")
-    log_file = os.path.join(log_paths["infos"], f"log_seed_{SEED}.csv")
-        
-    rewards_aif, rewards_rand = run_experiment(SEED, q_table_file, log_file, EPISODES, MAX_STEPS)
-
-    # for ep, (ra, rr) in enumerate(zip(rewards_aif, rewards_rand)):
-    #     all_results.append(
-    #         {"seed": SEED, "episode": ep, "aif_reward": ra, "rand_reward": rr}
-    #     )
-
-
-    # plot_average_episode_return_across_seeds(log_paths, 1, window=1,agent_names=['aif_reward', 'rand_reward'],k=5)
-    # plot_step_return_for_one_seed_csv(
-    #     os.path.join(log_paths["infos"], f"log_seed_0.csv"),
-    #     agent_cols=["aif_reward", "rand_reward"],
-    #     save_path=None
-    
-    # )
+plot_average_episode_return_across_seeds(log_paths, 1, window=1,agent_names=['aif_reward', 'rand_reward'],k=5)
+# plot_step_return_for_one_seed_csv(
+#     os.path.join(log_paths["infos"], f"log_seed_0.csv"),
+#     agent_cols=["aif_reward", "rand_reward"],
+#     save_path=None
+   
+# )
 
 
 
-    print("Experiment completed. Results saved.")
-
-
-if __name__ == "__main__":
-    main()
+print("Experiment completed. Results saved.")

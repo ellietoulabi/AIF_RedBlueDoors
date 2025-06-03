@@ -64,7 +64,7 @@ def plot_average_episode_return_across_seeds(log_paths, NUM_SEEDS, window=50, ag
         plt.axvline(x=ep, color='grey', linestyle='--', alpha=0.5)
 
     plt.tight_layout()
-    plt.savefig(os.path.join(log_paths["plots"], "average_returns_per_episode.png"))
+    plt.savefig(os.path.join(log_paths["plots"], "returns_per_episode.png"))
     plt.show()
 
 

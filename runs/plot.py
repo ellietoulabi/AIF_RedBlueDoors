@@ -55,8 +55,8 @@ def plot_average_episode_return_across_seeds(
         plt.plot(episodes, sm, label=f"{agent} Return", color=color)
         plt.fill_between(
             episodes,
-            sm - ci,
-            sm + ci,
+            np.float64 (sm - ci),
+            np.float64 (sm + ci),
             color=color,
             alpha=0.2
         )
@@ -136,8 +136,8 @@ def plot_success_rate_across_seeds(
         plt.plot(episodes, sr_smooth, label=f"{agent} Success Rate", color=color, linewidth=2)
         plt.fill_between(
             episodes,
-            (sr_smooth - ci).clip(0, 1),
-            (sr_smooth + ci).clip(0, 1),
+           np.float64( (sr_smooth - ci).clip(0, 1)),
+            np.float64((sr_smooth + ci).clip(0, 1)),
             color=color,
             alpha=0.1
         )
@@ -160,9 +160,9 @@ def plot_success_rate_across_seeds(
 
 # Example usage:
 log_paths = {
-    "infos": "/Users/el/dev/AIF_RedBlueDoors/logs/run_20250603_135519/infos",
-    "plots": "/Users/el/dev/AIF_RedBlueDoors/logs/run_20250603_135519/plots"
+    "infos": "/Users/el/dev/AIF_RedBlueDoors/logs/run_20250603_144014/infos",
+    "plots": "/Users/el/dev/AIF_RedBlueDoors/logs/run_20250603_144014/plots"
 }
-NUM_SEEDS = 1
+NUM_SEEDS = 5
 plot_average_episode_return_across_seeds(log_paths, NUM_SEEDS)
 plot_success_rate_across_seeds(log_paths, NUM_SEEDS)

@@ -18,11 +18,12 @@ from pymdp import utils as pymdp_utils
 from pymdp.maths import softmax as pymdp_softmax  # avoid conflict with scipy version
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
-args = parser.parse_args()
+# parser = argparse.ArgumentParser()
+# parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
+# args = parser.parse_args()
 
-VERBOSE = args.verbose
+# VERBOSE = args.verbose
+VERBOSE=False
 
 
 
