@@ -156,13 +156,51 @@ def plot_step_return_for_one_seed_csv(csv_path, agent_cols=["aif_reward", "rand_
 
 
 
+#TODO: 1. Plotting G and q_pi.
+#TODO: 2. Current state belief vs actual state
+#TODO: 3. Action takes
+
+def debug_plot_inference_step(qs, q_pi, G, step, episode, actual_state, action_taken, save_dir=None):
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import os
+
+    num_policies = len(q_pi)
+    num_factors = len(qs)
+
+    fig, axes = plt.subplots(1, 3, figsize=(18, 4))
+
+    # # 1️⃣ Beliefs over states (qs)
+    # for f, q in enumerate(qs):
+    #     axes[0].bar(np.arange(len(q)), q, label=f"Factor {f}")
+    #     axes[0].axvline(actual_state[f], color='red', linestyle='--', label=f"True State {f}" if f == 0 else None)
+    # axes[0].set_title("Posterior Beliefs over States (qs)")
+    # axes[0].set_xlabel("State Index")
+    # axes[0].set_ylabel("Probability")
+    # axes[0].legend()
+
+    # 2️⃣ Expected Free Energy (G)
+    axes[1].bar(np.arange(num_policies), G)
+    axes[1].set_title("Expected Free Energy per Policy (G)")
+    axes[1].set_xlabel("Policy Index")
+    axes[1].set_ylabel("G Value")
+
+    # 3️⃣ Posterior over Policies (q_pi)
+    axes[2].bar(np.arange(num_policies), q_pi)
+    axes[2].set_title("Posterior over Policies (q_pi)")
+    axes[2].set_xlabel("Policy Index")
+    axes[2].set_ylabel("Probability")
+
+    fig.suptitle(f"Ep {episode} Step {step} | Action: {action_taken}", fontsize=14)
+
+    plt.tight_layout()
+
+    # Save or show
+    if save_dir:
+        os.makedirs(save_dir, exist_ok=True)
+        plt.savefig(os.path.join(save_dir, f"ep_{episode}_step_{step}.png"))
+        plt.close()
+    else:
+        plt.show()
 
 
-
-
-def plot_efe():
-    pass
-
-
-def plot_vfe():
-    pass

@@ -16,7 +16,7 @@ from utils.env_utils import get_config_path
 from utils.logging_utils import create_experiment_folder
 from utils.plotting_utils import plot_average_episode_return_across_seeds
 from utils.plotting_utils import plot_step_return_for_one_seed_csv
-
+from utils.plotting_utils import debug_plot_inference_step
 
 metadata = {
     "description": "Experiment comparing AIF and Random agents in the Red-Blue Doors environment.",
@@ -63,6 +63,7 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
         sampling_mode="marginal",
         action_selection="stochastic",
         alpha=0.1,
+        gamma=4.0,
     )
 
     # Logging
@@ -75,7 +76,7 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
             "rand_action",
             "aif_reward",
             "rand_reward",
-            "qs",
+            # "qs",
             "q_pi",
             "G",
         ]
@@ -108,6 +109,7 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
             qs = aif_agent.infer_states(aif_obs)
             aif_agent.D = qs
             q_pi, G = aif_agent.infer_policies()
+            
 
             next_action_aif = aif_agent.sample_action()
             next_action_rand = np.random.choice(len(env.ACTION_MEANING))
@@ -133,21 +135,33 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
                         int(next_action_rand),
                         rewards.get("agent_0", 0),
                         rewards.get("agent_1", 0),
-                        qs,
+                        # qs,
                         q_pi,
                         G,
                     ]
                 )
                 
             aif_obs = convert_obs_to_active_inference_format(obs)
-
+            # if step==0 and episode==0:
+            #     print("_" * 50,"\n",qs)
+            # debug_plot_inference_step(
+            #     qs=qs,
+            #     q_pi=q_pi,
+            #     G=G,
+            #     step=step,
+            #     episode=episode,
+            #     actual_state=aif_obs,
+            #     action_taken=int(next_action_aif[0]),
+            #     save_dir="./debugplots"  # or None to just show
+            # )
+              # Check if any agent has terminated or truncated             
             if any(terminations.values()) or any(truncations.values()):
                 qs = aif_agent.infer_states(aif_obs)
                 q_pi, G = aif_agent.infer_policies()
                 aif_agent.D = qs
-                aif_agent.G = G
-                aif_agent.qs = qs
-                aif_agent.q_pi = q_pi
+                # aif_agent.G = G
+                # aif_agent.qs = qs
+                # aif_agent.q_pi = q_pi
                 break
 
 
@@ -159,14 +173,15 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
     return reward_log_aif, reward_log_rand
 
 
-# seeds = [0, 1, 2, 3, 4]  # or as many as you want
-seeds = [0]
+seeds = [0, 1, 2, 3, 4]  # or as many as you want
+# seeds = [0]
 all_results = []
 
 for seed in seeds:
     q_table_file = os.path.join(log_paths["root"], f"q_table_seed_{seed}.json")
     log_file = os.path.join(log_paths["infos"], f"log_seed_{seed}.csv")
-    rewards_aif, rewards_rand = run_experiment(seed, q_table_file, log_file, 25, 150)
+    
+    rewards_aif, rewards_rand = run_experiment(seed, q_table_file, log_file, 100, 150)
 
     for ep, (ra, rr) in enumerate(zip(rewards_aif, rewards_rand)):
         all_results.append(
@@ -175,12 +190,12 @@ for seed in seeds:
 
 
 plot_average_episode_return_across_seeds(log_paths, 1, window=1,agent_names=['aif_reward', 'rand_reward'],k=5)
-plot_step_return_for_one_seed_csv(
-    os.path.join(log_paths["infos"], f"log_seed_0.csv"),
-    agent_cols=["aif_reward", "rand_reward"],
-    save_path=None
+# plot_step_return_for_one_seed_csv(
+#     os.path.join(log_paths["infos"], f"log_seed_0.csv"),
+#     agent_cols=["aif_reward", "rand_reward"],
+#     save_path=None
    
-)
+# )
 
 
 
