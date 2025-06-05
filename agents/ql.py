@@ -10,9 +10,9 @@ class QLearningAgent:
         action_space_size,
         q_table_path=None,
         learning_rate=0.1,
-        discount_factor=0.99,
+        discount_factor=0.95,
         epsilon=1.0,
-        epsilon_decay=0.995,
+        epsilon_decay=0.985,
         min_epsilon=0.1,
         load_existing=True
     ):
@@ -24,6 +24,7 @@ class QLearningAgent:
         self.epsilon_decay = epsilon_decay
         self.min_epsilon = min_epsilon
         self.q_table_path = q_table_path
+        self.agents = ["agent_0", "agent_1"]
 
         self.q_table = {}
         if load_existing:
@@ -59,14 +60,14 @@ class QLearningAgent:
             return None  # or return a sentinel like "termina
         
         
-        a0 = obs["agent_0"]
-        a1 = obs["agent_1"]
-        pos0 = tuple(a0["position"])
-        pos1 = tuple(a1["position"])
+        self_agent = obs[self.agent_id]
+        other_agent = obs[next(a for a in self.agents if a != self.agent_id)]
+        self_pos = tuple(self_agent["position"])
+        other_pos = tuple(other_agent["position"])
         red = obs["red_door_opened"]
         blue = obs["blue_door_opened"]
-        near0 = a0["near_door"]
-        near1 = a1["near_door"]
+        self_near = self_agent["near_door"]
+        other_near = other_agent["near_door"]
         
        
         door_state = None
@@ -79,7 +80,7 @@ class QLearningAgent:
         else:
             door_state = 0
         
-        return (pos0, door_state, near0, pos1)
+        return (self_pos, door_state, self_near, other_pos)
         # return (pos0, near0, pos1, near1, red, blue)
 
 

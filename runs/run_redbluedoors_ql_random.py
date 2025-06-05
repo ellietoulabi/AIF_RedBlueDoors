@@ -1,45 +1,20 @@
-
-import copy
-import csv
+import argparse
 import os
+import csv
 import random
-import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
+import copy
 from tqdm import trange
+from datetime import datetime
+import wandb
 import sys
-
-
 sys.path.append("..")
+
 from envs.redbluedoors_env.ma_redbluedoors import RedBlueDoorEnv
-from agents.ql import QLearningAgent
+
 from utils.env_utils import get_config_path
-from utils.logging_utils import create_experiment_folder
-from utils.plotting_utils import plot_average_episode_return_across_seeds
 
-
-
-
-metadata = {
-    "description": "Experiment comparing Random and QLearning agents in the Red-Blue Doors environment.",
-    "agents": ["Random", "QLearning"],
-    "environment": "Red-Blue Doors",
-    "date": "2024-04-28",
-    "map_config": ["configs/config.json", "configs/config2.json"],
-    "seeds": 5,
-    "max_steps": 150,
-    "episodes": 100
-    
-}
-
-log_paths = create_experiment_folder(base_dir="logs", metadata=metadata)
-print("Logging folders:")
-for k, v in log_paths.items():
-    print(f"{k}: {v}")
-
-# Initialize wandb
-
-
+from agents.ql import QLearningAgent
 
 
 def run_experiment(seed, q_table_path, log_filename, episodes=2000, max_steps=150):
@@ -52,9 +27,7 @@ def run_experiment(seed, q_table_path, log_filename, episodes=2000, max_steps=15
         agent_id="agent_1",
         action_space_size=5,
         q_table_path=q_table_path,
-        load_existing=False,
-        epsilon_decay=0.99
-    )
+        load_existing=False    )
 
     # Logging
     with open(log_filename, mode="w", newline="") as file:
@@ -66,37 +39,34 @@ def run_experiment(seed, q_table_path, log_filename, episodes=2000, max_steps=15
             "ql_action",
             "random_reward",
             "ql_reward",
-            "map",
         ]
         writer = csv.writer(file)
         writer.writerow(fieldnames)
 
-    EPISODES = episodes
-    MAX_STEPS = max_steps
+    
 
     config_paths = [
         "../envs/redbluedoors_env/configs/config.json",
         "../envs/redbluedoors_env/configs/config2.json",
     ]
 
-    reward_log_random = []
-    reward_log_ql = []
-
-    for episode in trange(EPISODES, desc=f"Seed {seed} Training"):
-        config_path = get_config_path(config_paths, episode,20)
-        env = RedBlueDoorEnv(max_steps=MAX_STEPS, config_path=config_path)
+    for episode in trange(episodes, desc=f"Seed {seed} Training"):
+        config_path = get_config_path(config_paths, episode, k=100, alternate=True)
+        env = RedBlueDoorEnv(max_steps=max_steps, config_path=config_path)
         obs, _ = env.reset()
+        
         state = ql_agent.get_state(obs)
-        total_reward_random = 0
-        total_reward_ql = 0
+        step_reward_list_rand = []
+        step_reward_list_ql = []
 
-        for step in range(MAX_STEPS):
-
+        for step in range(max_steps):
             
+            step_reward_rand = 0
+            step_reward_ql = 0
+
             next_action_random = np.random.choice(len(env.ACTION_MEANING))
             next_action_ql = ql_agent.choose_action(state, "agent_1")
-            
-
+        
             action_dict = {
                 "agent_0": int(next_action_random),
                 "agent_1": int(next_action_ql),
@@ -109,11 +79,22 @@ def run_experiment(seed, q_table_path, log_filename, episodes=2000, max_steps=15
             if rewards and next_state is not None:
                 ql_agent.update_q_table(state, action_dict, rewards, next_state, "agent_1")
 
-            total_reward_random += rewards.get("agent_0", 0)
-            total_reward_ql += rewards.get("agent_1", 0)
+            step_reward_rand = rewards.get("agent_0", 0)
+            step_reward_ql = rewards.get("agent_1", 0)
+            
+            step_reward_list_rand.append(step_reward_rand)
+            step_reward_list_ql.append(step_reward_ql)
 
             state = next_state
-
+            wandb.log({
+                "seed": seed,
+                "episode": episode,
+                "step":step,
+                "random_action":int(next_action_random),
+                "ql_action": int(next_action_ql),
+                "random_reward": step_reward_rand,
+                "ql_reward": step_reward_ql
+            })
             with open(log_filename, "a", newline="") as file:
                 writer = csv.writer(file)
                 writer.writerow([
@@ -122,9 +103,8 @@ def run_experiment(seed, q_table_path, log_filename, episodes=2000, max_steps=15
                     step,
                     int(next_action_random),
                     int(next_action_ql),
-                    rewards.get("agent_0", 0),
-                    rewards.get("agent_1", 0),
-                    env.render()
+                    step_reward_rand,
+                    step_reward_ql,
                 ])
             # print(f"QL Action: {next_action_ql}, Random Action: {next_action_random}")
             # print(f"QTable:")
@@ -137,25 +117,73 @@ def run_experiment(seed, q_table_path, log_filename, episodes=2000, max_steps=15
 
         ql_agent.decay_exploration()
 
-        reward_log_random.append(total_reward_random)
-        reward_log_ql.append(total_reward_ql)
+        wandb.log({
+            "seed": seed,
+            "episode": episode,
+            "rand_return_of_episode": np.sum(step_reward_list_rand),
+            "ql_return_of_episode": np.sum(step_reward_list_ql),
+            "rand_average_reward_of_episode": np.mean(step_reward_list_rand),
+            "ql_average_reward_of_episode": np.mean(step_reward_list_ql),
+            
+        })
 
         env.close()
 
-    return reward_log_random, reward_log_ql
-
-NUM_SEEDS = 5  # update this to however many seeds you actually have
-seeds = [0, 1, 2, 3, 4]  # or as many as you want
-all_results = []
-
-for seed in seeds:
-    q_table_file = os.path.join(log_paths["infos"],f"q_table_seed_{seed}.json")
-    log_file = os.path.join(log_paths["infos"],f"log_seed_{seed}.csv")
-    rewards_aif, rewards_ql = run_experiment(seed, q_table_file, log_file, 2000, 150)
-
-    for ep, (ra, rq) in enumerate(zip(rewards_aif, rewards_ql)):
-        all_results.append({"seed": seed, "episode": ep, "random_reward": ra, "ql_reward": rq})
+    return True
 
 
-plot_average_episode_return_across_seeds(log_paths, metadata["seeds"], window=5,agent_names=['random_reward', 'ql_reward'],k=20)
-print("Experiment completed. Results saved.")
+def main():
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--seed",
+        type=int,
+        required=True,
+        help="Integer seed for this run"
+    )
+    parser.add_argument(
+        "--episodes",
+        type=int,
+        default=100,
+        help="Number of episodes (default=100)"
+    )
+    parser.add_argument(
+        "--max_steps",
+        type=int,
+        default=150,
+        help="Max steps per episode (default=150)"
+    )
+    args = parser.parse_args()
+    SEED      = args.seed
+    EPISODES  = args.episodes
+    MAX_STEPS = args.max_steps
+    
+
+    metadata = {
+        "description": "Experiment comparing Random and QL agents in the Red-Blue Doors environment.",
+        "agents": ["Random", "QL"],
+        "environment": "Red-Blue Doors",
+        "datetime": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "map_config": ["configs/config.json", "configs/config2.json"],
+        "seed": SEED,
+        "max_steps": MAX_STEPS,
+        "episodes": EPISODES,
+    }
+    
+    wandb.init(
+        project="redbluedoors",  # you can choose your own project name
+        name=f"seed_{SEED}_{datetime.now().strftime('%H%M%S')}",
+        config=metadata,
+        reinit=True   # allows multiple calls to wandb.init() in the same session
+    )
+
+    q_table_file = f"q_table_seed_{SEED}.json"
+    log_file = f"log_seed_{SEED}.csv"
+    _done = run_experiment(SEED, q_table_file, log_file, EPISODES, MAX_STEPS)
+
+    print("Experiment completed. Results saved.")
+    wandb.finish()
+
+
+if __name__ == "__main__":
+    main()

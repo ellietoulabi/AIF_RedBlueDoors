@@ -15,17 +15,15 @@ from pymdp.agent import Agent
 from envs.redbluedoors_env.ma_redbluedoors import RedBlueDoorEnv
 
 from utils.env_utils import get_config_path
-from utils.logging_utils import create_experiment_folder
-from utils.plotting_utils import plot_average_episode_return_across_seeds
-from utils.plotting_utils import plot_step_return_for_one_seed_csv
-from utils.plotting_utils import debug_plot_inference_step
+
+from agents.aif_models import model_2
+from agents.aif_models.model_2 import convert_obs_to_active_inference_format
 
 
 def run_experiment(seed, q_table_path, log_filename, episodes=2000, max_steps=150):
     print(np.random.seed(seed))
     print(random.seed(seed))
-    from agents.aif_models import model_2
-    from agents.aif_models.model_2 import convert_obs_to_active_inference_format
+    
 
     # Re-create the agents fresh for each seed
     aif_agent = Agent(
@@ -118,8 +116,7 @@ def run_experiment(seed, q_table_path, log_filename, episodes=2000, max_steps=15
                 )
                 
             aif_obs = convert_obs_to_active_inference_format(obs)
-            # if step==0 and episode==0:
-            #     print("_" * 50,"\n",qs)
+         
             # debug_plot_inference_step(
             #     qs=qs,
             #     q_pi=q_pi,
@@ -130,7 +127,7 @@ def run_experiment(seed, q_table_path, log_filename, episodes=2000, max_steps=15
             #     action_taken=int(next_action_aif[0]),
             #     save_dir="./debugplots"  # or None to just show
             # )
-              # Check if any agent has terminated or truncated             
+
             if any(terminations.values()) or any(truncations.values()):
                 qs = aif_agent.infer_states(aif_obs)
                 q_pi, G = aif_agent.infer_policies()
@@ -187,34 +184,23 @@ def main():
         "max_steps": MAX_STEPS,
         "episodes": EPISODES,
     }
-    print(metadata)
 
-    log_paths = create_experiment_folder(base_dir="../logs", metadata=metadata)
-    print("Logging folders:")
-    for k, v in log_paths.items():
-        print(f"{k}: {v}")
+    # log_paths = create_experiment_folder(base_dir="../logs", metadata=metadata)
+    # print("Logging folders:")
+    # for k, v in log_paths.items():
+    #     print(f"{k}: {v}")
 
 
     all_results = []
     
-    q_table_file = os.path.join(log_paths["root"], f"q_table_seed_{SEED}.json")
-    log_file = os.path.join(log_paths["infos"], f"log_seed_{SEED}.csv")
+    # q_table_file = os.path.join(log_paths["root"], f"q_table_seed_{SEED}.json")
+    # log_file = os.path.join(log_paths["infos"], f"log_seed_{SEED}.csv")
+    
+    
+    q_table_file = f"q_table_seed_{SEED}.json"
+    log_file = f"log_seed_{SEED}.csv"
         
     rewards_aif, rewards_rand = run_experiment(SEED, q_table_file, log_file, EPISODES, MAX_STEPS)
-
-    # for ep, (ra, rr) in enumerate(zip(rewards_aif, rewards_rand)):
-    #     all_results.append(
-    #         {"seed": SEED, "episode": ep, "aif_reward": ra, "rand_reward": rr}
-    #     )
-
-
-    # plot_average_episode_return_across_seeds(log_paths, 1, window=1,agent_names=['aif_reward', 'rand_reward'],k=5)
-    # plot_step_return_for_one_seed_csv(
-    #     os.path.join(log_paths["infos"], f"log_seed_0.csv"),
-    #     agent_cols=["aif_reward", "rand_reward"],
-    #     save_path=None
-    
-    # )
 
 
 

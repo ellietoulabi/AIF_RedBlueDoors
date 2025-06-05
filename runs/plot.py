@@ -160,9 +160,9 @@ def plot_success_rate_across_seeds(
 
 # Example usage:
 log_paths = {
-    "infos": "/Users/el/dev/AIF_RedBlueDoors/logs/run_20250603_144014/infos",
+    "infos": "/Users/el/dev/AIF_RedBlueDoors/runs/",
     "plots": "/Users/el/dev/AIF_RedBlueDoors/logs/run_20250603_144014/plots"
 }
-NUM_SEEDS = 5
-plot_average_episode_return_across_seeds(log_paths, NUM_SEEDS)
-plot_success_rate_across_seeds(log_paths, NUM_SEEDS)
+NUM_SEEDS = 1
+plot_average_episode_return_across_seeds(log_paths, NUM_SEEDS, k=100,agent_names=['ql1_reward', 'ql2_reward'])
+plot_success_rate_across_seeds(log_paths, NUM_SEEDS, k=100,agent_names=['ql1_reward', 'ql2_reward'])
