@@ -348,13 +348,13 @@ D = pymdp_utils.obj_array(num_factors)
 
 # Prior for controllable state factor
 D[0] = np.zeros(num_states[0])
-start_controllable_state = "pos_0|red_closed_blue_closed"
+start_controllable_state = "pos_8|red_closed_blue_closed"
 start_idx_0 = controllable_state_factors.index(start_controllable_state)
 D[0][start_idx_0] = 1.0
 
 # Prior for other agent's position (uncontrollable factor)
 D[1] = np.zeros(num_states[1])
-start_other_pos = "pos_8"
+start_other_pos = "pos_0"
 start_idx_1 = other_pos_factor.index(start_other_pos)
 D[1][start_idx_1] = 1.0
 
@@ -380,7 +380,6 @@ MODEL = {
     "D": D,
     "pA": pA
 }
-
 
 
 def convert_obs_to_active_inference_format(obs, agent_id):
@@ -437,7 +436,6 @@ def convert_obs_to_active_inference_format(obs, agent_id):
     other_pos_idx = other_pos_modality.index(other_pos_label)
 
     return [self_pos_idx, door_state_idx, near_door_idx, other_pos_idx]
-
 
 
 

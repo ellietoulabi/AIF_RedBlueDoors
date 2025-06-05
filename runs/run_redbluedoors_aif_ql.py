@@ -1,41 +1,30 @@
+import argparse
 import os
 import csv
 import random
 import numpy as np
 import copy
 from tqdm import trange
+from datetime import datetime
+import wandb
 import sys
+sys.path.append("..")
 
 from pymdp.agent import Agent
 
-sys.path.append("..")
 from envs.redbluedoors_env.ma_redbluedoors import RedBlueDoorEnv
+
 from agents.ql import QLearningAgent
+
 from agents.aif_models import model_2
 from agents.aif_models.model_2 import convert_obs_to_active_inference_format
+
 from utils.env_utils import get_config_path
 from utils.logging_utils import create_experiment_folder
 from utils.plotting_utils import plot_average_episode_return_across_seeds
 
 
-metadata = {
-    "description": "Experiment comparing AIF and Q-learning agents in the Red-Blue Doors environment.",
-    "agents": ["AIF", "Q-learning"],
-    "environment": "Red-Blue Doors",
-    "date": "2024-04-28",
-    "map_config": ["configs/config.json", "configs/config2.json"],
-    "seeds": 5,
-    "max_steps": 100,
-    "episodes": 100
-    
-}
-# log_paths = {"root": "../logs/run_20250513_120459",
-# "plots": "../logs/run_20250513_120459/plots",
-# "infos": "../logs/run_20250513_120459/infos"}
-log_paths = create_experiment_folder(base_dir="../logs", metadata=metadata)
-print("Logging folders:")
-for k, v in log_paths.items():
-    print(f"{k}: {v}")
+
 
 def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150):
     np.random.seed(seed)
@@ -68,41 +57,39 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
         fieldnames = [
             "seed",
             "episode",
-            "step",
-            "ql_action",
+            "step"
             "aif_action",
-            "ql_reward",
+            "ql_action",
             "aif_reward",
+            "ql_reward",
+           
         ]
         writer = csv.writer(file)
         writer.writerow(fieldnames)
 
-    EPISODES = episodes
-    MAX_STEPS = max_steps
 
     config_paths = [
         "../envs/redbluedoors_env/configs/config.json",
         "../envs/redbluedoors_env/configs/config2.json",
     ]
 
-    reward_log_aif = []
-    reward_log_ql = []
 
-    for episode in trange(EPISODES, desc=f"Seed {seed} Training"):
-        config_path = get_config_path(config_paths, episode)
-        env = RedBlueDoorEnv(max_steps=MAX_STEPS, config_path=config_path)
+    for episode in trange(episodes, desc=f"Seed {seed} Training"):
+        config_path = get_config_path(config_paths, episode, k=100, alternate=True)
+        env = RedBlueDoorEnv(max_steps=max_steps, config_path=config_path)
         obs, _ = env.reset()
         aif_obs = convert_obs_to_active_inference_format(obs)
         state = ql_agent.get_state(obs)
-        total_reward_aif = 0
-        total_reward_ql = 0
+        
+        step_reward_list_aif = []
+        step_reward_list_ql = []
 
         aif_agent.D = copy.deepcopy(model_2.MODEL["D"])
 
-        for step in range(MAX_STEPS):
+        for step in range(max_steps):
 
             qs = aif_agent.infer_states(aif_obs)
-            aif_agent.D = qs
+            # aif_agent.D = qs
             q_pi, G = aif_agent.infer_policies()
 
             next_action_aif = aif_agent.sample_action()
@@ -122,11 +109,22 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
                     state, action_dict, rewards, next_state, "agent_1"
                 )
 
-            total_reward_aif += rewards.get("agent_0", 0)
-            total_reward_ql += rewards.get("agent_1", 0)
+            step_reward_aif = rewards.get("agent_0", 0)
+            step_reward_ql = rewards.get("agent_1", 0)
+            
+            step_reward_list_aif.append(step_reward_aif)
+            step_reward_list_ql.append(step_reward_ql)
 
             state = next_state
-
+            wandb.log({
+                "seed": seed,
+                "episode": episode,
+                "step":step,
+                "aif_action":int(next_action_aif[0]),
+                "ql_action": int(next_action_ql),
+                "aif_reward": step_reward_aif,
+                "ql_reward": step_reward_ql
+            })
             with open(log_filename, "a", newline="") as file:
                 writer = csv.writer(file)
                 writer.writerow(
@@ -134,42 +132,115 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
                         seed,
                         episode,
                         step,
-                        int(next_action_ql),
                         int(next_action_aif[0]),
-                        rewards.get("agent_1", 0),
-                        rewards.get("agent_0", 0),
+                        int(next_action_ql),
+                        step_reward_aif,
+                        step_reward_ql,
+                        
                     ]
                 )
 
             if any(terminations.values()) or any(truncations.values()):
+                qs = aif_agent.infer_states(aif_obs)
+                q_pi, G = aif_agent.infer_policies()
+                aif_agent.D = qs
                 break
 
             aif_obs = convert_obs_to_active_inference_format(obs)
 
         ql_agent.decay_exploration()
 
-        reward_log_aif.append(total_reward_aif)
-        reward_log_ql.append(total_reward_ql)
+        wandb.log({
+            "seed": seed,
+            "episode": episode,
+            "aif_return_of_episode": np.sum(step_reward_list_aif),
+            "ql_return_of_episode": np.sum(step_reward_list_ql),
+            "aif_average_reward_of_episode": np.mean(step_reward_list_aif),
+            "ql_average_reward_of_episode": np.mean(step_reward_list_ql),
+            
+        })
 
         env.close()
 
-    return reward_log_aif, reward_log_ql
+    return True
+
+def main():
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--seed",
+        type=int,
+        required=True,
+        help="Integer seed for this run"
+    )
+    parser.add_argument(
+        "--episodes",
+        type=int,
+        default=100,
+        help="Number of episodes (default=100)"
+    )
+    parser.add_argument(
+        "--max_steps",
+        type=int,
+        default=150,
+        help="Max steps per episode (default=150)"
+    )
+    args = parser.parse_args()
+    SEED      = args.seed
+    EPISODES  = args.episodes
+    MAX_STEPS = args.max_steps
+    
+
+    metadata = {
+        "description": "Experiment comparing AIF and QL agents in the Red-Blue Doors environment.",
+        "agents": ["AIF", "QL"],
+        "environment": "Red-Blue Doors",
+        "datetime": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "map_config": ["configs/config.json", "configs/config2.json"],
+        "seed": SEED,
+        "max_steps": MAX_STEPS,
+        "episodes": EPISODES,
+    }
+    
+    wandb.init(
+        project="redbluedoors",  # you can choose your own project name
+        name=f"seed_{SEED}_{datetime.now().strftime('%H%M%S')}",
+        config=metadata,
+        reinit=True   # allows multiple calls to wandb.init() in the same session
+    )
+
+    q_table_file = f"q_table_seed_{SEED}.json"
+    log_file = f"log_seed_{SEED}.csv"
+    _done = run_experiment(SEED, q_table_file, log_file, EPISODES, MAX_STEPS)
+
+    print("Experiment completed. Results saved.")
+    wandb.finish()
 
 
-seeds = [0, 1, 2, 3, 4]  # or as many as you want
-all_results = []
+if __name__ == "__main__":
+    main()
 
-for seed in seeds:
-    q_table_file = os.path.join(log_paths["root"],f"q_table_seed_{seed}.json")
-    log_file = os.path.join(log_paths["infos"],f"log_seed_{seed}.csv")
-    rewards_aif, rewards_ql = run_experiment(seed, q_table_file, log_file, 100, 100)
+#___________________
 
-    for ep, (ra, rq) in enumerate(zip(rewards_aif, rewards_ql)):
-        all_results.append(
-            {"seed": seed, "episode": ep, "aif_reward": ra, "ql_reward": rq}
-        )
+# log_paths = create_experiment_folder(base_dir="../logs", metadata=metadata)
+# print("Logging folders:")
+# for k, v in log_paths.items():
+#     print(f"{k}: {v}")
+
+# seeds = [0, 1, 2, 3, 4]  # or as many as you want
+# all_results = []
+
+# for seed in seeds:
+#     q_table_file = os.path.join(log_paths["root"],f"q_table_seed_{seed}.json")
+#     log_file = os.path.join(log_paths["infos"],f"log_seed_{seed}.csv")
+#     rewards_aif, rewards_ql = run_experiment(seed, q_table_file, log_file, 100, 100)
+
+#     for ep, (ra, rq) in enumerate(zip(rewards_aif, rewards_ql)):
+#         all_results.append(
+#             {"seed": seed, "episode": ep, "aif_reward": ra, "ql_reward": rq}
+#         )
 
 
 
-plot_average_episode_return_across_seeds(log_paths, metadata["seeds"], window=5,agent_names=['aif_reward', 'ql_reward'])
-print("Experiment completed. Results saved.")
+# plot_average_episode_return_across_seeds(log_paths, metadata["seeds"], window=5,agent_names=['aif_reward', 'ql_reward'])
+# print("Experiment completed. Results saved.")

@@ -164,5 +164,5 @@ log_paths = {
     "plots": "/Users/el/dev/AIF_RedBlueDoors/logs/run_20250603_144014/plots"
 }
 NUM_SEEDS = 1
-plot_average_episode_return_across_seeds(log_paths, NUM_SEEDS, k=100,agent_names=['ql1_reward', 'ql2_reward'])
-plot_success_rate_across_seeds(log_paths, NUM_SEEDS, k=100,agent_names=['ql1_reward', 'ql2_reward'])
+plot_average_episode_return_across_seeds(log_paths, NUM_SEEDS, k=100,agent_names=['aif_reward', 'ql_reward'])
+plot_success_rate_across_seeds(log_paths, NUM_SEEDS, k=100,agent_names=['aif_reward', 'ql_reward'])
