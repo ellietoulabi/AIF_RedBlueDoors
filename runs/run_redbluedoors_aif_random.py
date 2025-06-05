@@ -20,7 +20,7 @@ from agents.aif_models import model_2
 from agents.aif_models.model_2 import convert_obs_to_active_inference_format
 
 
-def run_experiment(seed, q_table_path, log_filename, episodes=2000, max_steps=150):
+def run_experiment(seed, log_filename, episodes=2000, max_steps=150, change_every=50):
     print(np.random.seed(seed))
     print(random.seed(seed))
     
@@ -69,7 +69,7 @@ def run_experiment(seed, q_table_path, log_filename, episodes=2000, max_steps=15
     reward_log_rand = []
 
     for episode in trange(episodes, desc=f"Seed {seed} Training"):
-        config_path = get_config_path(config_paths, episode, k=5, alternate=True)
+        config_path = get_config_path(config_paths, episode, k=change_every, alternate=True)
         env = RedBlueDoorEnv(max_steps=max_steps, config_path=config_path)
         obs, _ = env.reset()
         aif_obs = convert_obs_to_active_inference_format(obs)
@@ -168,10 +168,19 @@ def main():
         default=150,
         help="Max steps per episode (default=150)"
     )
+    
+    parser.add_argument(
+        "--change_every",
+        type=int,
+        default=50,
+        help="Change map every k episodes (default=50)"
+    )
+    
     args = parser.parse_args()
     SEED      = args.seed
     EPISODES  = args.episodes
     MAX_STEPS = args.max_steps
+    CHANGE_EVERY = args.change_every
     
         
     metadata = {
@@ -183,6 +192,7 @@ def main():
         "seed": SEED,
         "max_steps": MAX_STEPS,
         "episodes": EPISODES,
+        "change_every": CHANGE_EVERY,
     }
 
     # log_paths = create_experiment_folder(base_dir="../logs", metadata=metadata)
@@ -197,10 +207,9 @@ def main():
     # log_file = os.path.join(log_paths["infos"], f"log_seed_{SEED}.csv")
     
     
-    q_table_file = f"q_table_seed_{SEED}.json"
-    log_file = f"log_seed_{SEED}.csv"
+    log_file = f"aif_rand_log_seed_{SEED}.csv"
         
-    rewards_aif, rewards_rand = run_experiment(SEED, q_table_file, log_file, EPISODES, MAX_STEPS)
+    rewards_aif, rewards_rand = run_experiment(SEED, log_file, EPISODES, MAX_STEPS, CHANGE_EVERY)
 
 
 

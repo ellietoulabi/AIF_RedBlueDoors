@@ -17,7 +17,7 @@ from utils.env_utils import get_config_path
 
 
 
-def run_experiment(seed, log_filename, episodes=2000, max_steps=150):
+def run_experiment(seed, log_filename, episodes=2000, max_steps=150, change_every=50):
     np.random.seed(seed)
     random.seed(seed)
 
@@ -49,7 +49,7 @@ def run_experiment(seed, log_filename, episodes=2000, max_steps=150):
 
 
     for episode in trange(episodes, desc=f"Seed {seed} Training"):
-        config_path = get_config_path(config_paths, episode, k=50, alternate=True)
+        config_path = get_config_path(config_paths, episode, k=change_every, alternate=True)
         env = RedBlueDoorEnv(max_steps=max_steps, config_path=config_path)
         obs, _ = env.reset()
         
@@ -140,10 +140,19 @@ def main():
         default=150,
         help="Max steps per episode (default=150)"
     )
+    
+    parser.add_argument(
+        "--change_every",
+        type=int,
+        default=50,
+        help="Change environment configuration every N episodes (default=50)"
+    )  
+    
     args = parser.parse_args()
     SEED      = args.seed
     EPISODES  = args.episodes
     MAX_STEPS = args.max_steps
+    CHANGE_EVERY = args.change_every
     
 
     metadata = {
@@ -155,6 +164,7 @@ def main():
         "seed": SEED,
         "max_steps": MAX_STEPS,
         "episodes": EPISODES,
+        "change_every": CHANGE_EVERY,
     }
     
     wandb.init(
@@ -173,8 +183,8 @@ def main():
     # q_table_file = os.path.join(log_paths["root"], f"q_table_seed_{SEED}.json")
     # log_file = os.path.join(log_paths["infos"], f"log_seed_{SEED}.csv")
     
-    log_file = f"log_seed_{SEED}.csv"
-    _done = run_experiment(SEED, log_file, EPISODES, MAX_STEPS)
+    log_file = f"rand_rand_log_seed_{SEED}.csv"
+    _done = run_experiment(SEED, log_file, EPISODES, MAX_STEPS, CHANGE_EVERY)
     
     print("Experiment completed. Results saved.")
     wandb.finish()

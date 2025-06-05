@@ -26,7 +26,7 @@ from utils.plotting_utils import plot_average_episode_return_across_seeds
 
 
 
-def run_experiment(seed, log_filename, episodes=100, max_steps=150):
+def run_experiment(seed, log_filename, episodes=100, max_steps=150, change_every=50):
     np.random.seed(seed)
     random.seed(seed)
 
@@ -71,6 +71,10 @@ def run_experiment(seed, log_filename, episodes=100, max_steps=150):
             "aif2_action",
             "aif1_reward",
             "aif2_reward",
+            "aif1_q_pi",
+            "aif2_q_pi",
+            "aif1_G",
+            "aif2_G",
            
         ]
         writer = csv.writer(file)
@@ -84,7 +88,7 @@ def run_experiment(seed, log_filename, episodes=100, max_steps=150):
 
 
     for episode in trange(episodes, desc=f"Seed {seed} Training"):
-        config_path = get_config_path(config_paths, episode, k=100, alternate=True)
+        config_path = get_config_path(config_paths, episode, k=change_every, alternate=True)
         env = RedBlueDoorEnv(max_steps=max_steps, config_path=config_path)
         obs, _ = env.reset()
         aif1_obs = convert_obs_to_active_inference_format(obs, "agent_0")
@@ -133,6 +137,10 @@ def run_experiment(seed, log_filename, episodes=100, max_steps=150):
                 "aif2_action": int(next_action_aif2[0]),
                 "aif1_reward": step_reward_aif1,
                 "aif2_reward": step_reward_aif2,
+                "aif1_q_pi": q_pi1,
+                "aif2_q_pi": q_pi2,
+                "aif1_G": G1,
+                "aif2_G": G2,
             })
             with open(log_filename, "a", newline="") as file:
                 writer = csv.writer(file)
@@ -145,6 +153,10 @@ def run_experiment(seed, log_filename, episodes=100, max_steps=150):
                         int(next_action_aif2[0]),
                         step_reward_aif1,
                         step_reward_aif2,
+                        q_pi1,
+                        q_pi2,
+                        G1,
+                        G2,
                         
                     ]
                 )
@@ -198,10 +210,18 @@ def main():
         default=150,
         help="Max steps per episode (default=150)"
     )
+    
+    parser.add_argument(
+        "--change_every",
+        type=int,
+        default=50,
+        help="Change map every k episodes (default=50)"
+    )
     args = parser.parse_args()
     SEED      = args.seed
     EPISODES  = args.episodes
     MAX_STEPS = args.max_steps
+    CHANGE_EVERY = args.change_every
     
 
     metadata = {
@@ -213,7 +233,11 @@ def main():
         "seed": SEED,
         "max_steps": MAX_STEPS,
         "episodes": EPISODES,
+        "change_every": CHANGE_EVERY,
     }
+    print("Metadata for this run:")
+    for k, v in metadata.items():
+        print(f"{k}: {v}")
     
     wandb.init(
         project="redbluedoors",  # you can choose your own project name
@@ -222,8 +246,8 @@ def main():
         reinit=True   # allows multiple calls to wandb.init() in the same session
     )
 
-    log_file = f"log_seed_{SEED}.csv"
-    _done = run_experiment(SEED, log_file, EPISODES, MAX_STEPS)
+    log_file = f"aif_aif_log_seed_{SEED}.csv"
+    _done = run_experiment(SEED, log_file, EPISODES, MAX_STEPS, CHANGE_EVERY)
 
     print("Experiment completed. Results saved.")
     wandb.finish()
@@ -256,3 +280,5 @@ if __name__ == "__main__":
 
 # plot_average_episode_return_across_seeds(log_paths, metadata["seeds"], window=5,agent_names=['aif_reward', 'ql_reward'])
 # print("Experiment completed. Results saved.")
+
+
