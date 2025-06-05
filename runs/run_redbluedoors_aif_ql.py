@@ -79,7 +79,7 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
         config_path = get_config_path(config_paths, episode, k=change_every, alternate=True)
         env = RedBlueDoorEnv(max_steps=max_steps, config_path=config_path)
         obs, _ = env.reset()
-        aif_obs = convert_obs_to_active_inference_format(obs)
+        aif_obs = convert_obs_to_active_inference_format(obs, "agent_0")
         state = ql_agent.get_state(obs)
         
         step_reward_list_aif = []
@@ -117,6 +117,7 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
             step_reward_list_ql.append(step_reward_ql)
 
             state = next_state
+            aif_obs = convert_obs_to_active_inference_format(obs, "agent_0")
             wandb.log({
                 "seed": seed,
                 "episode": episode,
@@ -151,7 +152,7 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
                 aif_agent.D = qs
                 break
 
-            aif_obs = convert_obs_to_active_inference_format(obs)
+            
 
         ql_agent.decay_exploration()
 
