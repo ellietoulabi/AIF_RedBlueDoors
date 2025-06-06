@@ -7,7 +7,7 @@ import numpy as np
 import copy
 from tqdm import trange
 from datetime import datetime
-import wandb
+# import wandb
 import sys
 sys.path.append("..")
 
@@ -76,15 +76,15 @@ def run_experiment(seed, log_filename, episodes=2000, max_steps=150, change_ever
             step_reward_list_rand1.append(step_reward_rand1)
             step_reward_list_rand2.append(step_reward_rand2)
             
-            wandb.log({
-                "seed": seed,
-                "episode": episode,
-                "step":step,
-                "rand1_action":int(next_action_rand1),
-                "rand2_action": int(next_action_rand2),
-                "rand1_reward": step_reward_rand1,
-                "rand2_reward": step_reward_rand2
-            })
+            # wandb.log({
+            #     "seed": seed,
+            #     "episode": episode,
+            #     "step":step,
+            #     "rand1_action":int(next_action_rand1),
+            #     "rand2_action": int(next_action_rand2),
+            #     "rand1_reward": step_reward_rand1,
+            #     "rand2_reward": step_reward_rand2
+            # })
             
             with open(log_filename, "a", newline="") as file:
                 writer = csv.writer(file)
@@ -103,15 +103,15 @@ def run_experiment(seed, log_filename, episodes=2000, max_steps=150, change_ever
             if any(terminations.values()) or any(truncations.values()):
                 break
         
-        wandb.log({
-                "seed": seed,
-                "episode": episode,
-                "rand1_return_of_episode": np.sum(step_reward_list_rand1),
-                "rand2_return_of_episode": np.sum(step_reward_list_rand2),
-                "rand1_average_reward_of_episode": np.mean(step_reward_list_rand1),
-                "rand2_average_reward_of_episode": np.mean(step_reward_list_rand2),
+        # wandb.log({
+        #         "seed": seed,
+        #         "episode": episode,
+        #         "rand1_return_of_episode": np.sum(step_reward_list_rand1),
+        #         "rand2_return_of_episode": np.sum(step_reward_list_rand2),
+        #         "rand1_average_reward_of_episode": np.mean(step_reward_list_rand1),
+        #         "rand2_average_reward_of_episode": np.mean(step_reward_list_rand2),
                 
-            })
+        #     })
 
         env.close()
 
@@ -167,12 +167,12 @@ def main():
         "change_every": CHANGE_EVERY,
     }
     
-    wandb.init(
-        project="redbluedoors",  # you can choose your own project name
-        name=f"seed_{SEED}_{datetime.now().strftime('%H%M%S')}",
-        config=metadata,
-        reinit=True   # allows multiple calls to wandb.init() in the same session
-    )
+    # wandb.init(
+    #     project="redbluedoors",  # you can choose your own project name
+    #     name=f"seed_{SEED}_{datetime.now().strftime('%H%M%S')}",
+    #     config=metadata,
+    #     reinit=True   # allows multiple calls to wandb.init() in the same session
+    # )
     
     # log_paths = create_experiment_folder(base_dir="../logs", metadata=metadata)
     # print("Logging folders:")
@@ -187,7 +187,7 @@ def main():
     _done = run_experiment(SEED, log_file, EPISODES, MAX_STEPS, CHANGE_EVERY)
     
     print("Experiment completed. Results saved.")
-    wandb.finish()
+    # wandb.finish()
 
 
 if __name__ == "__main__":
