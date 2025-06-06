@@ -4,7 +4,7 @@
 #SBATCH --array=0-4                       # seeds 0,1,2,3,4
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16G
-#SBATCH --time=0-1:59
+#SBATCH --time=0-8:59
 
 
 
@@ -54,15 +54,15 @@ cd runs
 
 
 
-python run_redbluedoors_random_random.py --seed ${SEED} --episodes 100 --max_steps 150
+python run_redbluedoors_random_random.py --seed ${SEED} --episodes 1000 --max_steps 150 --change_every 50
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -ne 0 ]; then
-    echo "run_redbluedoors_aif_random.py for seed $SEED failed with exit code $EXIT_CODE"
+    echo "run_redbluedoors_aif_aif.py for seed $SEED failed with exit code $EXIT_CODE"
     exit $EXIT_CODE
 fi
 
-SEED_LOG_DIR="log_seed_${SEED}.csv"
+SEED_LOG_DIR="aif_aif_log_seed_${SEED}.csv"
 DEST_BASE="/home/toulabin/projects/def-jrwright/toulabin/logs"
 
 mkdir -p "${DEST_BASE}"
@@ -71,4 +71,4 @@ echo "Copying logs to home directory..."
 cp "${SEED_LOG_DIR}" "${DEST_BASE}/"
 
 echo "Copy done"
-echo "---- Seed ${SEED} complete ----"
+echo "---- AIF AIF Seed ${SEED} complete ----"
