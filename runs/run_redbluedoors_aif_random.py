@@ -8,7 +8,7 @@ import copy
 from tqdm import trange
 from datetime import datetime
 import sys
-import wandb
+# import wandb
 sys.path.append("..")
 
 from pymdp.agent import Agent
@@ -101,17 +101,17 @@ def run_experiment(seed, log_filename, episodes=2000, max_steps=150, change_ever
             
             step_reward_list_aif.append(step_reward_aif)
             step_reward_list_rand.append(step_reward_rand)
-            wandb.log({
-                "seed": seed,
-                "episode": episode,
-                "step":step,
-                "aif_action":int(next_action_aif[0]),
-                "rand_action": int(next_action_rand),
-                "aif_reward": step_reward_aif,
-                "rand_reward": step_reward_rand,
-                "q_pi": q_pi,
-                "G": G,
-            })
+            # wandb.log({
+            #     "seed": seed,
+            #     "episode": episode,
+            #     "step":step,
+            #     "aif_action":int(next_action_aif[0]),
+            #     "rand_action": int(next_action_rand),
+            #     "aif_reward": step_reward_aif,
+            #     "rand_reward": step_reward_rand,
+            #     "q_pi": q_pi,
+            #     "G": G,
+            # })
             with open(log_filename, "a", newline="") as file:
                 writer = csv.writer(file)
                 writer.writerow(
@@ -152,15 +152,15 @@ def run_experiment(seed, log_filename, episodes=2000, max_steps=150, change_ever
                 break
 
 
-        wandb.log({
-            "seed": seed,
-            "episode": episode,
-            "aif_return_of_episode": np.sum(step_reward_list_aif),
-            "rand_return_of_episode": np.sum(step_reward_list_rand),
-            "aif_average_reward_of_episode": np.mean(step_reward_list_aif),
-            "rand_average_reward_of_episode": np.mean(step_reward_list_rand),
+        # wandb.log({
+        #     "seed": seed,
+        #     "episode": episode,
+        #     "aif_return_of_episode": np.sum(step_reward_list_aif),
+        #     "rand_return_of_episode": np.sum(step_reward_list_rand),
+        #     "aif_average_reward_of_episode": np.mean(step_reward_list_aif),
+        #     "rand_average_reward_of_episode": np.mean(step_reward_list_rand),
             
-        })
+        # })
 
         env.close()
 
@@ -222,12 +222,12 @@ def main():
     #     print(f"{k}: {v}")
 
 
-    wandb.init(
-        project="redbluedoors",  # you can choose your own project name
-        name=f"seed_{SEED}_{datetime.now().strftime('%H%M%S')}",
-        config=metadata,
-        reinit=True   # allows multiple calls to wandb.init() in the same session
-    )
+    # wandb.init(
+    #     project="redbluedoors",  # you can choose your own project name
+    #     name=f"seed_{SEED}_{datetime.now().strftime('%H%M%S')}",
+    #     config=metadata,
+    #     reinit=True   # allows multiple calls to wandb.init() in the same session
+    # )
     
     # q_table_file = os.path.join(log_paths["root"], f"q_table_seed_{SEED}.json")
     # log_file = os.path.join(log_paths["infos"], f"log_seed_{SEED}.csv")

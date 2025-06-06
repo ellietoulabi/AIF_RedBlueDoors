@@ -6,7 +6,7 @@ import numpy as np
 import copy
 from tqdm import trange
 from datetime import datetime
-import wandb
+# import wandb
 import sys
 sys.path.append("..")
 
@@ -118,17 +118,17 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
 
             state = next_state
             aif_obs = convert_obs_to_active_inference_format(obs, "agent_0")
-            wandb.log({
-                "seed": seed,
-                "episode": episode,
-                "step":step,
-                "aif_action":int(next_action_aif[0]),
-                "ql_action": int(next_action_ql),
-                "aif_reward": step_reward_aif,
-                "ql_reward": step_reward_ql,
-                "q_pi": q_pi,
-                "G": G,
-            })
+            # wandb.log({
+            #     "seed": seed,
+            #     "episode": episode,
+            #     "step":step,
+            #     "aif_action":int(next_action_aif[0]),
+            #     "ql_action": int(next_action_ql),
+            #     "aif_reward": step_reward_aif,
+            #     "ql_reward": step_reward_ql,
+            #     "q_pi": q_pi,
+            #     "G": G,
+            # })
             with open(log_filename, "a", newline="") as file:
                 writer = csv.writer(file)
                 writer.writerow(
@@ -156,15 +156,15 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
 
         ql_agent.decay_exploration()
 
-        wandb.log({
-            "seed": seed,
-            "episode": episode,
-            "aif_return_of_episode": np.sum(step_reward_list_aif),
-            "ql_return_of_episode": np.sum(step_reward_list_ql),
-            "aif_average_reward_of_episode": np.mean(step_reward_list_aif),
-            "ql_average_reward_of_episode": np.mean(step_reward_list_ql),
+        # wandb.log({
+        #     "seed": seed,
+        #     "episode": episode,
+        #     "aif_return_of_episode": np.sum(step_reward_list_aif),
+        #     "ql_return_of_episode": np.sum(step_reward_list_ql),
+        #     "aif_average_reward_of_episode": np.mean(step_reward_list_aif),
+        #     "ql_average_reward_of_episode": np.mean(step_reward_list_ql),
             
-        })
+        # })
 
         env.close()
 
@@ -219,19 +219,19 @@ def main():
     }
     print("Experiment metadata:", metadata)
     
-    wandb.init(
-        project="redbluedoors",  # you can choose your own project name
-        name=f"seed_{SEED}_{datetime.now().strftime('%H%M%S')}",
-        config=metadata,
-        reinit=True   # allows multiple calls to wandb.init() in the same session
-    )
+    # wandb.init(
+    #     project="redbluedoors",  # you can choose your own project name
+    #     name=f"seed_{SEED}_{datetime.now().strftime('%H%M%S')}",
+    #     config=metadata,
+    #     reinit=True   # allows multiple calls to wandb.init() in the same session
+    # )
 
     q_table_file = f"aif_ql_q_table_seed_{SEED}.json"
     log_file = f"aif_ql_log_seed_{SEED}.csv"
     _done = run_experiment(SEED, q_table_file, log_file, EPISODES, MAX_STEPS, CHANGE_EVERY)
 
     print("Experiment completed. Results saved.")
-    wandb.finish()
+    # wandb.finish()
 
 
 if __name__ == "__main__":

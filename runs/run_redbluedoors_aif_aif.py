@@ -6,7 +6,7 @@ import numpy as np
 import copy
 from tqdm import trange
 from datetime import datetime
-import wandb
+# import wandb
 import sys
 sys.path.append("..")
 
@@ -129,19 +129,19 @@ def run_experiment(seed, log_filename, episodes=100, max_steps=150, change_every
             step_reward_list_aif1.append(step_reward_aif1)
             step_reward_list_aif2.append(step_reward_aif2)
 
-            wandb.log({
-                "seed": seed,
-                "episode": episode,
-                "step":step,
-                "aif1_action":int(next_action_aif1[0]),
-                "aif2_action": int(next_action_aif2[0]),
-                "aif1_reward": step_reward_aif1,
-                "aif2_reward": step_reward_aif2,
-                "aif1_q_pi": q_pi1,
-                "aif2_q_pi": q_pi2,
-                "aif1_G": G1,
-                "aif2_G": G2,
-            })
+            # wandb.log({
+            #     "seed": seed,
+            #     "episode": episode,
+            #     "step":step,
+            #     "aif1_action":int(next_action_aif1[0]),
+            #     "aif2_action": int(next_action_aif2[0]),
+            #     "aif1_reward": step_reward_aif1,
+            #     "aif2_reward": step_reward_aif2,
+            #     "aif1_q_pi": q_pi1,
+            #     "aif2_q_pi": q_pi2,
+            #     "aif1_G": G1,
+            #     "aif2_G": G2,
+            # })
             with open(log_filename, "a", newline="") as file:
                 writer = csv.writer(file)
                 writer.writerow(
@@ -175,15 +175,15 @@ def run_experiment(seed, log_filename, episodes=100, max_steps=150, change_every
 
             
 
-        wandb.log({
-            "seed": seed,
-            "episode": episode,
-            "aif1_return_of_episode": np.sum(step_reward_list_aif1),
-            "aif2_return_of_episode": np.sum(step_reward_list_aif2),
-            "aif1_average_reward_of_episode": np.mean(step_reward_list_aif1),
-            "aif2_average_reward_of_episode": np.mean(step_reward_list_aif2),
+        # wandb.log({
+        #     "seed": seed,
+        #     "episode": episode,
+        #     "aif1_return_of_episode": np.sum(step_reward_list_aif1),
+        #     "aif2_return_of_episode": np.sum(step_reward_list_aif2),
+        #     "aif1_average_reward_of_episode": np.mean(step_reward_list_aif1),
+        #     "aif2_average_reward_of_episode": np.mean(step_reward_list_aif2),
             
-        })
+        # })
 
         env.close()
 
@@ -239,18 +239,18 @@ def main():
     for k, v in metadata.items():
         print(f"{k}: {v}")
     
-    wandb.init(
-        project="redbluedoors",  # you can choose your own project name
-        name=f"seed_{SEED}_{datetime.now().strftime('%H%M%S')}",
-        config=metadata,
-        reinit=True   # allows multiple calls to wandb.init() in the same session
-    )
+    # wandb.init(
+    #     project="redbluedoors",  # you can choose your own project name
+    #     name=f"seed_{SEED}_{datetime.now().strftime('%H%M%S')}",
+    #     config=metadata,
+    #     reinit=True   # allows multiple calls to wandb.init() in the same session
+    # )
 
     log_file = f"aif_aif_log_seed_{SEED}.csv"
     _done = run_experiment(SEED, log_file, EPISODES, MAX_STEPS, CHANGE_EVERY)
 
     print("Experiment completed. Results saved.")
-    wandb.finish()
+    # wandb.finish()
 
 
 if __name__ == "__main__":
