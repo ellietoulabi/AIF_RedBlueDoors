@@ -41,7 +41,7 @@ def run_experiment(seed, log_filename, episodes=2000, max_steps=150, change_ever
         alpha=0.1,
         gamma=4.0,
     )
-
+    print(aif_agent.policies)
     # Logging
     with open(log_filename, mode="w", newline="") as file:
         fieldnames = [
