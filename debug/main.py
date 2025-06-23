@@ -1,52 +1,34 @@
-from utils import run_team_stats_and_plots
-from utils import plot_average_episode_return_across_seeds
-from utils import plot_team_with_ci
-from utils import analyze_team_door_opening_patterns
-from utils import plot_door_opening_statistics
+from utils import analyze_ql_behavior_comparison
+from utils import analyze_behavior_correlations
+from utils import analyze_episode_lengths
+from utils import plot_agent_location_heatmaps
+
 
 if __name__ == "__main__":
     NUM_SEEDS = 5
     logs_path = "/Users/el/dev/AIF_RedBlueDoors/logs/cc_logs copy"
-    
-    print("="*80)
-    print("RUNNING COMPREHENSIVE TEAM ANALYSIS")
-    print("="*80)
-    
-    # 1. Door Opening Pattern Analysis
+
     print("\n" + "="*80)
-    print("1. DOOR OPENING PATTERN ANALYSIS")
+    print("1.7. QL BEHAVIOR COMPARISON ANALYSIS")
     print("="*80)
-    door_results = analyze_team_door_opening_patterns(logs_path, NUM_SEEDS, print_individual_seeds=False)
+    # ql_behavior_results = analyze_ql_behavior_comparison(logs_path, NUM_SEEDS)
     
-    # 1.5. Create Door Opening Statistics Plots
     print("\n" + "="*80)
-    print("1.5. CREATING DOOR OPENING STATISTICS PLOTS")
+    print("1.8. BEHAVIOR CORRELATION ANALYSIS")
     print("="*80)
-    plot_door_opening_statistics(door_results)
+    # analyze_behavior_correlations(ql_behavior_results)
     
-    # 2. Episode Return Plots
     print("\n" + "="*80)
-    print("2. GENERATING EPISODE RETURN PLOTS")
+    print("1.9. EPISODE LENGTH ANALYSIS")
     print("="*80)
-    plot_average_episode_return_across_seeds(logs_path, NUM_SEEDS, prefix="aif_aif", k=50,agent_names=['aif1_reward', 'aif2_reward'])
-    plot_average_episode_return_across_seeds(logs_path, NUM_SEEDS, prefix="aif_ql", k=50,agent_names=['aif_reward', 'ql_reward'])
-    plot_average_episode_return_across_seeds(logs_path, NUM_SEEDS, prefix="aif_rand", k=50,agent_names=['aif_reward', 'rand_reward'])
-    plot_average_episode_return_across_seeds(logs_path, NUM_SEEDS, prefix="ql_ql", k=50,agent_names=['ql1_reward', 'ql2_reward'])
-    plot_average_episode_return_across_seeds(logs_path, NUM_SEEDS, prefix="ql_rand", k=50,agent_names=['ql_reward', 'random_reward'])
-    plot_average_episode_return_across_seeds(logs_path, NUM_SEEDS, prefix="rand_rand", k=50,agent_names=['rand1_reward', 'rand2_reward'])
-    
-    # 3. Team Stats and Plots
-    print("\n" + "="*80)
-    print("3. GENERATING TEAM STATS AND PLOTS")
-    print("="*80)
-    run_team_stats_and_plots(logs_path, NUM_SEEDS)
+    # episode_length_results = analyze_episode_lengths(logs_path, NUM_SEEDS)
     
     print("\n" + "="*80)
     print("ANALYSIS COMPLETE!")
     print("="*80)
     print("Results saved to:")
-    print("- Door opening analysis: /Users/el/dev/AIF_RedBlueDoors/debug/results/door_opening_analysis/")
-    print("- Episode return plots: /Users/el/dev/AIF_RedBlueDoors/debug/results/average_episode_return_across_seeds/")
-    print("- Team stats plots: /Users/el/dev/AIF_RedBlueDoors/debug/results/team_stats_and_plots/")
+    print("- QL behavior analysis: /Users/el/dev/AIF_RedBlueDoors/debug/results/ql_behavior_analysis/")
+    print("- Episode length analysis: /Users/el/dev/AIF_RedBlueDoors/debug/results/episode_length_analysis/")
     print("="*80)
-
+    plot_agent_location_heatmaps(logs_path, NUM_SEEDS)
+    
