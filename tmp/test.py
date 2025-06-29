@@ -5,6 +5,7 @@ import numpy as np
 import copy
 from tqdm import trange
 import sys
+import matplotlib.pyplot as plt
 
 from pymdp.agent import Agent
 
@@ -14,33 +15,27 @@ from agents.aif_models import model_2
 from agents.aif_models.model_2 import convert_obs_to_active_inference_format
 from utils.env_utils import get_config_path
 from utils.logging_utils import create_experiment_folder
-from utils.plotting_utils import plot_average_episode_return_across_seeds
 
 
-metadata = {
-    "description": "Experiment comparing AIF and Random agents in the Red-Blue Doors environment.",
-    "agents": ["AIF", "Random"],
-    "environment": "Red-Blue Doors",
-    "date": "2024-04-28",
-    "map_config": ["configs/config.json", "configs/config2.json"],
-    "seeds": 5,
-    "max_steps": 150,
-    "episodes": 100
-    
-}
-# log_paths = {"root": "../logs/run_20250513_120459",
-# "plots": "../logs/run_20250513_120459/plots",
-# "infos": "../logs/run_20250513_120459/infos"}
-log_paths = create_experiment_folder(base_dir="../logs", metadata=metadata)
+log_paths = create_experiment_folder(base_dir=".")
 print("Logging folders:")
 for k, v in log_paths.items():
     print(f"{k}: {v}")
 
-def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150):
+# Main script - simple single agent AIF loop
+if __name__ == "__main__":
+    # Parameters
+    seed = 42
+    episodes = 5
+    max_steps = 100
+    
+    # Set random seeds
     np.random.seed(seed)
     random.seed(seed)
 
-    # Re-create the agents fresh for each seed
+    print(f"Running single agent AIF with seed {seed}")
+    
+    # Create AIF agent
     aif_agent = Agent(
         A=model_2.MODEL["A"],
         B=model_2.MODEL["B"],
@@ -55,106 +50,88 @@ def run_experiment(seed, q_table_path, log_filename, episodes=100, max_steps=150
         alpha=0.1,
     )
 
-
-    # Logging
+    # Simple logging
+    log_filename = f"single_agent_aif_seed_{seed}.csv"
     with open(log_filename, mode="w", newline="") as file:
-        fieldnames = [
-            "seed",
-            "episode",
-            "step",
-            "aif_action",
-            "rand_action",
-            "aif_reward",
-            "rand_reward",
-        ]
+        fieldnames = ["episode", "step", "action", "reward", "total_reward"]
         writer = csv.writer(file)
         writer.writerow(fieldnames)
 
-    EPISODES = episodes
-    MAX_STEPS = max_steps
 
-    config_paths = [
-        "../envs/redbluedoors_env/configs/config.json",
-        "../envs/redbluedoors_env/configs/config2.json",
-    ]
+    
+    episode_rewards = []
+    all_step_rewards = []  # Store step rewards for each episode
 
-    reward_log_aif = []
-    reward_log_rand = []
-
-    for episode in trange(EPISODES, desc=f"Seed {seed} Training"):
-        config_path = get_config_path(config_paths, episode, 20)
-        env = RedBlueDoorEnv(max_steps=MAX_STEPS, config_path=config_path)
+    for episode in trange(episodes, desc=f"Episode"):
+        # Get config for this episode
+        config_path = ig_paths =  "../envs/redbluedoors_env/configs/config.json"
+        env = RedBlueDoorEnv(max_steps=max_steps, config_path=config_path)
+        
+        # Reset environment
         obs, _ = env.reset()
-        aif_obs = convert_obs_to_active_inference_format(obs)
-        total_reward_aif = 0
-        total_reward_rand = 0
-
+        aif_obs = convert_obs_to_active_inference_format(obs,"agent_0")
+        total_reward = 0
+        step_rewards = []  # Store rewards for this episode
+        
+        # Reset agent's initial beliefs
         aif_agent.D = copy.deepcopy(model_2.MODEL["D"])
 
-        for step in range(MAX_STEPS):
-
+        for step in range(max_steps):
+            # AIF inference loop
             qs = aif_agent.infer_states(aif_obs)
             aif_agent.D = qs
             q_pi, G = aif_agent.infer_policies()
 
-            next_action_aif = aif_agent.sample_action()
-            next_action_rand = np.random.choice(len(env.ACTION_MEANING))
-
-            action_dict = {
-                "agent_0": int(next_action_aif[0]),
-                "agent_1": int(next_action_rand),
-            }
-
+            # Sample action
+            action = aif_agent.sample_action()
+            action_int = int(action[0])
+            
+            # Take action (single agent)
+            action_dict = {"agent_0": action_int}
             obs, rewards, terminations, truncations, infos = env.step(action_dict)
 
+            # Get reward
+            reward = rewards.get("agent_0", 0)
+            total_reward += reward
+            step_rewards.append(reward)  # Collect step reward
 
-            total_reward_aif += rewards.get("agent_0", 0)
-            total_reward_rand += rewards.get("agent_1", 0)
-
-
+            # Log step
             with open(log_filename, "a", newline="") as file:
                 writer = csv.writer(file)
-                writer.writerow(
-                    [
-                        seed,
-                        episode,
-                        step,
-                        int(next_action_aif[0]),
-                        int(next_action_rand),
-                        rewards.get("agent_0", 0),
-                        rewards.get("agent_1", 0),
-                        
-                    ]
-                )
+                writer.writerow([episode, step, action_int, reward, total_reward])
 
+            # Check if episode is done
             if any(terminations.values()) or any(truncations.values()):
                 break
 
-            aif_obs = convert_obs_to_active_inference_format(obs)
+            # Update observation for next step
+            aif_obs = convert_obs_to_active_inference_format(obs, "agent_0")
 
-
-        reward_log_aif.append(total_reward_aif)
-        reward_log_rand.append(total_reward_rand)
-
+        episode_rewards.append(total_reward)
+        all_step_rewards.append(step_rewards)
         env.close()
 
-    return reward_log_aif, reward_log_rand
+        
+    
+    # Final results
+    print(f"Final results:")
+    print(f"Average reward: {np.mean(episode_rewards):.2f}")
+    print(f"Best episode: {np.max(episode_rewards):.2f}")
+    print(f"Worst episode: {np.min(episode_rewards):.2f}")
 
+    # Plot all step rewards concatenated as a single line
+    flat_rewards = []
+    episode_ends = []
+    for rewards in all_step_rewards:
+        flat_rewards.extend(rewards)
+        episode_ends.append(len(flat_rewards))  # Mark the end of each episode
 
-seeds = [0, 1, 2, 3, 4]  # or as many as you want
-all_results = []
-
-for seed in seeds:
-    q_table_file = os.path.join(log_paths["root"],f"q_table_seed_{seed}.json")
-    log_file = os.path.join(log_paths["infos"],f"log_seed_{seed}.csv")
-    rewards_aif, rewards_rand = run_experiment(seed, q_table_file, log_file, 100, 150)
-
-    for ep, (ra, rr) in enumerate(zip(rewards_aif, rewards_rand)):
-        all_results.append(
-            {"seed": seed, "episode": ep, "aif_reward": ra, "ql_reward": rr}
-        )
-
-
-
-plot_average_episode_return_across_seeds(log_paths, metadata["seeds"], window=5,agent_names=['aif_reward', 'rand_reward'],k=20)
-print("Experiment completed. Results saved.")
+    plt.figure(figsize=(12, 6))
+    plt.plot(flat_rewards, label='Step Reward (all episodes)')
+    for ep_end in episode_ends[:-1]:  # Don't draw at the very end
+        plt.axvline(ep_end, color='gray', linestyle='--', alpha=0.5)
+    plt.xlabel('Step (across all episodes)')
+    plt.ylabel('Reward')
+    plt.title('Step Reward Across All Episodes (Concatenated)')
+    plt.tight_layout()
+    plt.show()
