@@ -12,13 +12,12 @@ from agents.aif_models import model_2
 from agents.aif_models.model_2 import convert_obs_to_active_inference_format
 
 if __name__ == "__main__":
-    # Parameters
+    
     seed = 42
     max_steps = 10
     np.random.seed(seed)
     random.seed(seed)
    
-    # Create AIF agent
     aif_agent = Agent(
         A=model_2.MODEL["A"],
         B=model_2.MODEL["B"],
@@ -31,25 +30,18 @@ if __name__ == "__main__":
         sampling_mode="marginal",
         action_selection="stochastic",
         alpha=0.1,
-    #     policies=[np.array([[3, 0],
-    #    [3, 0],
-    #    [3, 0],
-    #    [4, 0]]), np.array([[1, 0],
-    #    [1, 0],
-    #    [1, 0],
-    #    [4, 0]])]و
-        # control_fac_idx=[0,1],
     )
     print(aif_agent.control_fac_idx)
-    # for policy in aif_agent.policies:
-    #     print(policy,"\n")
+    
     print(np.array(aif_agent.policies).shape)
-    # exit()
-
-    # Environment
+   
     config_path = "../envs/redbluedoors_env/configs/config.json"
     env = RedBlueDoorEnv(max_steps=max_steps, config_path=config_path)
     obs, _ = env.reset()
+    print(obs)
+    print(obs["agent_0"]["next_intention"])
+    exit()
+    
     aif_obs = convert_obs_to_active_inference_format(obs, "agent_0")
     total_reward = 0
     step_rewards = []

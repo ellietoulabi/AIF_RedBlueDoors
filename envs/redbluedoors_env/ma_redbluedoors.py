@@ -292,11 +292,38 @@ class RedBlueDoorEnv(ParallelEnv):
             "agent_0": {
                 "position": np.array(self.agent_positions["agent_0"], dtype=np.int32),
                 "near_door": int(self._is_near_door(*self.agent_positions["agent_0"])),
+                "next_intention": self.get_next_intention(*self.agent_positions["agent_0"]),
             },
             "agent_1": {
                 "position": np.array(self.agent_positions["agent_1"], dtype=np.int32),
                 "near_door": int(self._is_near_door(*self.agent_positions["agent_1"])),
+                "next_intention": self.get_next_intention(*self.agent_positions["agent_1"]),
             },
             "red_door_opened": int(self.red_door_opened),
             "blue_door_opened": int(self.blue_door_opened),
         }
+
+
+    def get_next_intention(self, x, y):
+        """
+        Returns:
+            'red_door_next' if agent is close to red door only
+            'blue_door_next' if agent is close to blue door only
+            'idle' if close to both or neither
+        """
+        grid_size = max(self.width, self.height)
+        rx, ry = self.red_door
+        bx, by = self.blue_door
+        dist_red = ((x - rx) ** 2 + (y - ry) ** 2) ** 0.5
+        dist_blue = ((x - bx) ** 2 + (y - by) ** 2) ** 0.5
+        threshold = 0.5 * grid_size
+
+        close_red = dist_red < threshold
+        close_blue = dist_blue < threshold
+
+        if close_red and not close_blue:
+            return 'open_red_next'
+        elif close_blue and not close_red:
+            return 'open_blue_next'
+        else:
+            return 'idle'
