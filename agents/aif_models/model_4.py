@@ -62,7 +62,7 @@ def grid_to_pos(map_size: str) -> list:
     return pos
 
 
-def convert_obs_to_active_inference_format(obs, agent_id):
+def convert_obs_to_active_inference_format(obs, agent_id)->list:
     """
     Converts raw PettingZoo observation to indices for the Active Inference modalities.
     Uses variables already defined in model_2.py (global scope).
@@ -133,10 +133,139 @@ def convert_obs_to_active_inference_format(obs, agent_id):
 "Global Variables"
 
 MAP_SIZE = "3x3"
-VERBOSE = False
+VERBOSE = True
 A_NOISE_LEVEL = 0.2
 B_NOISE_LEVEL = 0.2
 
+
+
+AGENT_0_POLICIES = [
+# Goal-directed
+np.array([
+    [1, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 0],
+    [4, 0, 1, 0, 0, 0],
+    [4, 0, 0, 0, 0, 0],
+    [4, 0, 0, 0, 0, 0],
+]),
+np.array([
+    [3, 0, 0, 0, 0, 0],
+    [3, 0, 0, 0, 0, 0],
+    [4, 0, 1, 0, 0, 0],
+    [4, 0, 0, 0, 0, 0],
+    [4, 0, 0, 0, 0, 0],
+]),
+# Delayed goal-directed
+np.array([
+    [4, 0, 0, 0, 0, 0],
+    [4, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 0],
+    [4, 0, 1, 0, 0, 0],
+]),
+np.array([
+    [4, 0, 0, 0, 0, 0],
+    [4, 0, 0, 0, 0, 0],
+    [3, 0, 0, 0, 0, 0],
+    [3, 0, 0, 0, 0, 0],
+    [4, 0, 1, 0, 0, 0],
+]),
+# Switched 
+np.array([
+    [3, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 0],
+    [2, 0, 0, 0, 0, 0],
+    [4, 0, 1, 0, 0, 0],
+]),
+np.array([
+    [1, 0, 0, 0, 0, 0],
+    [3, 0, 0, 0, 0, 0],
+    [3, 0, 0, 0, 0, 0],
+    [0, 0, 1, 0, 0, 0],
+    [4, 0, 0, 0, 0, 0],
+]),
+# Ineffective 
+np.array([
+    [3, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0],
+    [4, 0, 1, 0, 0, 0],
+]),
+np.array([
+    [3, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 0],
+    [2, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0],
+    [4, 0, 1, 0, 0, 0],
+]),  
+       
+]
+
+AGENT_1_POLICIES = [   
+# Goal-directed
+np.array([
+    [2, 0, 0, 0, 0, 0],
+    [2, 0, 0, 0, 0, 0],
+    [4, 0, 1, 0, 0, 0],
+    [4, 0, 0, 0, 0, 0],
+    [4, 0, 0, 0, 0, 0],
+]),
+np.array([
+    [0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0],
+    [4, 0, 1, 0, 0, 0],
+    [4, 0, 0, 0, 0, 0],
+    [4, 0, 0, 0, 0, 0],
+]),
+# Delayed goal-directed
+np.array([
+    [4, 0, 0, 0, 0, 0],
+    [4, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0],
+    [0, 0, 1, 0, 0, 0],
+]),
+np.array([
+    [4, 0, 0, 0, 0, 0],
+    [4, 0, 0, 0, 0, 0],
+    [2, 0, 0, 0, 0, 0],
+    [2, 0, 0, 0, 0, 0],
+    [4, 0, 1, 0, 0, 0],
+]),
+# Switched goal-directed
+np.array([
+    [0, 0, 0, 0, 0, 0],
+    [2, 0, 0, 0, 0, 0],
+    [2, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 0],
+    [4, 0, 1, 0, 0, 0],
+]),
+np.array([
+    [2, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0],
+    [3, 0, 0, 0, 0, 0],
+    [4, 0, 1, 0, 0, 0],
+]),
+# Ineffective
+np.array([
+    [2, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 0],
+    [4, 0, 1, 0, 0, 0],
+]),
+np.array([
+    [0, 0, 0, 0, 0, 0],
+    [2, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 0],
+    [3, 0, 0, 0, 0, 0],
+    [4, 0, 1, 0, 0, 0],
+]),  
+  
+]
 
 "States Definition"
 
@@ -148,17 +277,18 @@ doors_state_factor = [
     "red_closed_blue_open",
     "red_open_blue_open",
 ]
-other_intention_factor = [
-    "open_red_next",
-    "open_blue_next",
-    "idle",
-]
+red_door_pos_factor = grid_to_pos(MAP_SIZE)
+blue_door_pos_factor = grid_to_pos(MAP_SIZE)
+joint_policy_factor = [ (i,j) for i in range(len(AGENT_0_POLICIES)) for j in range(len(AGENT_1_POLICIES)) ]
+
 
 num_states = [
     len(self_pos_factor),
     len(other_pos_factor),
     len(doors_state_factor),
-    len(other_intention_factor),
+    len(red_door_pos_factor),
+    len(blue_door_pos_factor),
+    len(joint_policy_factor),
 ]
 num_factors = len(num_states)
 
@@ -168,7 +298,10 @@ if VERBOSE:
     print(f"Number of states in self position factor: {num_states[0]}")
     print(f"Number of states in other position factor: {num_states[1]}")
     print(f"Number of states in doors state factor: {num_states[2]}")
-    print(f"Number of states in other intention factor: {num_states[3]}")
+    print(f"Number of states in red door position factor: {num_states[3]}")
+    print(f"Number of states in blue door position factor: {num_states[4]}")
+    print(f"Number of states in joint policy factor: {num_states[5]}")
+
 
 
 "Observation Definition"
@@ -181,19 +314,36 @@ door_state_modality = [
     "red_closed_blue_open",
     "red_open_blue_open",
 ]
-other_intention_modality = [
-    "open_red_next",
-    "open_blue_next",
-    "idle",
+near_red_door_modality = [
+    "near",
+    "far",
 ]
-game_outcome_modality = ["win", "lose", "neutral"]
+near_blue_door_modality = [
+    "near",
+    "far",
+]
+
+ALL_ACTIONS = [
+    "up",
+    "down",
+    "left",
+    "right",
+    "noop",
+    "door_noop",
+    "door_open",
+]
+joint_action_modality = [
+    (i,j) for i in range(len(ALL_ACTIONS)) for j in range(len(ALL_ACTIONS))
+]
+# game_outcome_modality = ["win", "lose", "neutral"]
 
 num_obs = [
     len(self_pos_modality),
     len(other_pos_modality),
     len(door_state_modality),
-    len(other_intention_modality),
-    len(game_outcome_modality),
+    len(near_red_door_modality),
+    len(near_blue_door_modality),
+    len(joint_action_modality),
 ]
 num_modalities = len(num_obs)
 
@@ -203,32 +353,40 @@ if VERBOSE:
     print(f"Number of self position observations: {num_obs[0]}")
     print(f"Number of other position observations: {num_obs[1]}")
     print(f"Number of door state observations: {num_obs[2]}")
-    print(f"Number of other intention observations: {num_obs[3]}")
-    print(f"Number of game outcome observations: {num_obs[4]}")
+    print(f"Number of near red door observations: {num_obs[3]}")
+    print(f"Number of near blue door observations: {num_obs[4]}")
+    print(f"Number of joint action observations: {num_obs[5]}")
 
 
 "Control Definition"
 
-self_movement_action_names = ["up", "down", "left", "right"]
-door_action_names = ["noop", "open"]
-other_intention_action_names = ["noop"]
-other_movement_action_names = ["noop"]
+self_pos_controls = ["up", "down", "left", "right", "noop"]
+other_pos_controls = ["noop"]
+doors_state_controls = ["door_noop", "door_open"]
+red_door_pos_controls = ["noop"]
+blue_door_pos_controls = ["noop"]
+joint_policy_controls = ["noop"] # TODO: Is this factor controllable? How?
 
 num_controls = [
-    len(self_movement_action_names),
-    len(other_movement_action_names),
-    len(door_action_names),
-    len(other_intention_action_names),
+    len(self_pos_controls),
+    len(other_pos_controls),
+    len(doors_state_controls),
+    len(red_door_pos_controls),
+    len(blue_door_pos_controls),
+    len(joint_policy_controls),
 ]
 num_control_factors = len(num_controls)
 
 if VERBOSE:
     print("\n", "-" * 10 + "Control Definition" + "-" * 10)
     print(f"Number of control factors: {num_control_factors}")
-    print(f"Number of self movement controls: {num_controls[0]}")
-    print(f"Number of other movement controls: {num_controls[1]}")
-    print(f"Number of door controls: {num_controls[2]}")
-    print(f"Number of other intention controls: {num_controls[3]}")
+    print(f"Number of self position controls: {num_controls[0]}")
+    print(f"Number of other position controls: {num_controls[1]}")
+    print(f"Number of doors state controls: {num_controls[2]}")
+    print(f"Number of red door position controls: {num_controls[3]}")
+    print(f"Number of blue door position controls: {num_controls[4]}")
+    print(f"Number of joint policy controls: {num_controls[5]}")
+
 
 
 "A Matrix Definition"
@@ -316,6 +474,7 @@ for s0 in range(num_states[0]):  # self_pos
 if VERBOSE:
     for m in range(num_modalities):
         print(f"A[{m}] normalized: {pymdp_utils.is_normalized(A[m])}")
+
 
 
 " B Matrix Definition "
@@ -592,4 +751,6 @@ MODEL = {
     "D": D1,
     "pA": pA
 }
+
+
 
