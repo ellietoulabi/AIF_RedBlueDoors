@@ -133,7 +133,7 @@ def convert_obs_to_active_inference_format(obs, agent_id)->list:
 "Global Variables"
 
 MAP_SIZE = "3x3"
-VERBOSE = True
+VERBOSE = False
 A_NOISE_LEVEL = 0.2
 B_NOISE_LEVEL = 0.2
 
@@ -395,6 +395,15 @@ if VERBOSE:
 A (likelihood matrix) is probability of seeing an observation given a state p(o|s).
 A[i] is the likelihood matrix for the i-th modality.
 A[i] shape is [num_obs[i], num_states[0], ..., num_states[N]]
+
+(6,)
+(9, 9, 9, 4, 9, 9, 64)
+(9, 9, 9, 4, 9, 9, 64)
+(4, 9, 9, 4, 9, 9, 64)
+(2, 9, 9, 4, 9, 9, 64)
+(2, 9, 9, 4, 9, 9, 64)
+(49, 9, 9, 4, 9, 9, 64)
+
 """
 
 
@@ -402,79 +411,37 @@ A = pymdp_utils.initialize_empty_A(num_obs, num_states)
 
 
 # --- Modality 0: Self‐Position (noisy identity on s0) ---
-for s0 in range(num_states[0]):
-    for s1 in range(num_states[1]):
-        for s2 in range(num_states[2]):
-            for s3 in range(num_states[3]):
-                for o_idx in range(num_obs[0]):
-                    if o_idx == s0:
-                        A[0][o_idx, s0, :, :, :] = 1.0 - A_NOISE_LEVEL
-                    else:
-                        A[0][o_idx, s0, :, :, :] = A_NOISE_LEVEL / (num_obs[0] - 1)
+base0 = np.full((num_obs[0], num_states[0]), A_NOISE_LEVEL/(num_obs[0]-1))   
+np.fill_diagonal(base0, 1.0 - A_NOISE_LEVEL)
+A[0][:] = base0.reshape(num_obs[0], num_states[0], *([1] * (A[0].ndim - 2)))
 
 
 # --- Modality 1: Other‐Position (noisy identity on s1) ---
-for s0 in range(num_states[0]):
-    for s1 in range(num_states[1]):
-        for s2 in range(num_states[2]):
-            for s3 in range(num_states[3]):
-                for o_idx in range(num_obs[1]):
-                    if o_idx == s1:
-                        A[1][o_idx, :, s1, :, :] = 1.0 - A_NOISE_LEVEL
-                    else:
-                        A[1][o_idx, :, s1, :, :] = A_NOISE_LEVEL / (num_obs[1] - 1)
+base1 = np.full((num_obs[1], num_states[1]), A_NOISE_LEVEL / (num_obs[1] - 1))
+np.fill_diagonal(base1, 1.0 - A_NOISE_LEVEL)
+A[1][:] = base1.reshape([num_obs[1], 1, num_states[1]] + [1] * (A[1].ndim - 3))
 
 
 # --- Modality 2: Door State (noisy identity on s2) ---
-for s0 in range(num_states[0]):
-    for s1 in range(num_states[1]):
-        for s2 in range(num_states[2]):
-            for s3 in range(num_states[3]):
-                for o_idx in range(num_obs[2]):
-                    if o_idx == s2:
-                        A[2][o_idx, :, :, s2, :] = 1.0 - A_NOISE_LEVEL
-                    else:
-                        A[2][o_idx, :, :, s2, :] = A_NOISE_LEVEL / (num_obs[2] - 1)
+base2 = np.full((num_obs[2], num_states[2]), A_NOISE_LEVEL/(num_obs[2]-1))
+np.fill_diagonal(base2, 1.0 - A_NOISE_LEVEL)
+A[2][:] = base2.reshape([num_obs[2], 1, 1, num_states[2]] + [1]*(A[2].ndim - 4))
+
+# --- Modality 3: Near red door 
+A[3].fill(1 / num_obs[3])
+
+# --- Modality 4: Near blue door
+A[4].fill(1 / num_obs[4])
+
+# --- Modality 5: Joint Action (noisy identity on s5) ---
+A[5].fill(1 / num_obs[5])
 
 
-# --- Modality 3: Other Intention (noisy identity on s3) ---
-for s0 in range(num_states[0]):
-    for s1 in range(num_states[1]):
-        for s2 in range(num_states[2]):
-            for s3 in range(num_states[3]):
-                for o_idx in range(num_obs[3]):
-                    if o_idx == s3:
-                        A[3][o_idx, :, :, :, s3] = 1.0 - A_NOISE_LEVEL
-                    else:
-                        A[3][o_idx, :, :, :, s3] = A_NOISE_LEVEL / (num_obs[3] - 1)
-
-
-# --- Modality 4: Game Outcome (noisy identity on s4) ---
-neutral_idx = game_outcome_modality.index("neutral")
-win_idx = game_outcome_modality.index("win")
-lose_idx = game_outcome_modality.index("lose")
-terminal_idx = doors_state_factor.index("red_open_blue_open")
-
-for s0 in range(num_states[0]):  # self_pos
-    for s1 in range(num_states[1]):  # other_pos
-        for s2 in range(num_states[2]):  # doors_state
-            for s3 in range(num_states[3]):  # other_intent
-                # Win
-                A[4][0, s0, s1, 3, s3] = 1.0 - A_NOISE_LEVEL
-                A[4][0, s0, s1, 0:3, s3] = A_NOISE_LEVEL / (num_obs[4] - 1)
-                # Lose
-                A[4][1, s0, s1, 2, s3] = 1.0 - A_NOISE_LEVEL
-                A[4][1, s0, s1, 0:2, s3] = A_NOISE_LEVEL / (num_obs[4] - 1)
-                A[4][1, s0, s1, 3, s3] = A_NOISE_LEVEL / (num_obs[4] - 1)
-                # Neutral
-                A[4][2, s0, s1, 0, s3] = 1.0 - A_NOISE_LEVEL
-                A[4][2, s0, s1, 1, s3] = 1.0 - A_NOISE_LEVEL
-                A[4][2, s0, s1, 2:4, s3] = A_NOISE_LEVEL / (num_obs[4] - 1)
+# my_plot_likelihood(A[5][:,0,0,0,0,0,:],yticklabels=joint_action_modality, xticklabels=joint_policy_factor)  
 
 if VERBOSE:
     for m in range(num_modalities):
         print(f"A[{m}] normalized: {pymdp_utils.is_normalized(A[m])}")
-
 
 
 " B Matrix Definition "
@@ -513,6 +480,8 @@ def get_next_pos_idx(pos_idx, action):
         x = max(0, x - 1)
     elif action == 3:  # right
         x = min(2, x + 1)
+    elif action == 4:  # noop
+        pass  # Stay in the same position
 
     return xy_to_pos_idx.get((x, y), pos_idx)
 
@@ -582,19 +551,32 @@ for current_door_state in range(num_states[2]):
                         num_states[2] - len(possible_next_states)
                     )
 
-# B[3]: Other intention transitions (controlled by other intention actions - mostly noop)
-for current_intent in range(num_states[3]):
-    for action in range(num_controls[3]):
-        # Other agent's intention mostly stays the same (noop action) with noise
-        B[3][current_intent, current_intent, action] = 1.0 - B_NOISE_LEVEL
-        # Distribute noise to other intentions
-        for other_intent in range(num_states[3]):
-            if other_intent != current_intent:
-                B[3][other_intent, current_intent, action] += B_NOISE_LEVEL / (
-                    num_states[3] - 1
-                )
+# 3) Red‐Door Position transitions (factor 3)
+#    B[3].shape == (S3, S3, 1)  where S3 = num_states[3] = 9
+S3 = num_states[3]
+baseB3 = np.full((S3, S3), B_NOISE_LEVEL/(S3-1))
+np.fill_diagonal(baseB3, 1.0 - B_NOISE_LEVEL)
+# reshape to (S3, S3, 1)
+B[3][:] = baseB3.reshape(S3, S3, 1)
 
-# Verify B matrices are normalized
+
+# 4) Blue‐Door Position transitions (factor 4)
+#    B[4].shape == (S4, S4, 1)  where S4 = num_states[4] = 9
+S4 = num_states[4]
+baseB4 = np.full((S4, S4), B_NOISE_LEVEL/(S4-1))
+np.fill_diagonal(baseB4, 1.0 - B_NOISE_LEVEL)
+B[4][:] = baseB4.reshape(S4, S4, 1)
+
+
+# 5) Joint‐Policy transitions (factor 5)
+#    B[5].shape == (S5, S5, 1)  where S5 = num_states[5] = 64
+S5 = num_states[5]
+baseB5 = np.full((S5, S5), B_NOISE_LEVEL/(S5-1))
+np.fill_diagonal(baseB5, 1.0 - B_NOISE_LEVEL)
+B[5][:] = baseB5.reshape(S5, S5, 1)
+
+
+
 if VERBOSE:
     print("\n", "-" * 10 + "B Matrix Definition " + "-" * 10)
     print(f"B matrix shape: {[B[i].shape for i in range(len(B))]}")
@@ -604,12 +586,7 @@ if VERBOSE:
         print(f"B[{f}] normalized: {pymdp_utils.is_normalized(B[f])}")
 
     # B[0]: Self position transitions
-    for action_idx in range(num_controls[0]):
-        action_name = (
-            self_movement_action_names[action_idx]
-            if action_idx < len(self_movement_action_names)
-            else f"action_{action_idx}"
-        )
+    for action_idx, action_name in enumerate(self_pos_controls):
         my_plot_likelihood(
             B[0][:, :, action_idx],
             title=f"B[0] - Self Position Transitions ({action_name})",
@@ -620,12 +597,7 @@ if VERBOSE:
         )
 
     # B[1]: Other position transitions
-    for action_idx in range(num_controls[1]):
-        action_name = (
-            other_movement_action_names[action_idx]
-            if action_idx < len(other_movement_action_names)
-            else f"action_{action_idx}"
-        )
+    for action_idx, action_name in enumerate(other_pos_controls):
         my_plot_likelihood(
             B[1][:, :, action_idx],
             title=f"B[1] - Other Position Transitions ({action_name})",
@@ -636,12 +608,7 @@ if VERBOSE:
         )
 
     # B[2]: Door state transitions
-    for action_idx in range(num_controls[2]):
-        action_name = (
-            door_action_names[action_idx]
-            if action_idx < len(door_action_names)
-            else f"action_{action_idx}"
-        )
+    for action_idx, action_name in enumerate(doors_state_controls):
         my_plot_likelihood(
             B[2][:, :, action_idx],
             title=f"B[2] - Door State Transitions ({action_name})",
@@ -651,21 +618,36 @@ if VERBOSE:
             yticklabels=doors_state_factor,
         )
 
-    # B[3]: Other intention transitions
-    for action_idx in range(num_controls[3]):
-        action_name = (
-            other_intention_action_names[action_idx]
-            if action_idx < len(other_intention_action_names)
-            else f"action_{action_idx}"
-        )
-        my_plot_likelihood(
-            B[3][:, :, action_idx],
-            title=f"B[3] - Other Intention Transitions ({action_name})",
-            xlabel="Current Intention",
-            ylabel="Next Intention",
-            xticklabels=other_intention_factor,
-            yticklabels=other_intention_factor,
-        )
+    # B[3]: Red door position transitions
+    my_plot_likelihood(
+        B[3][:, :, 0],
+        title="B[3] - Red Door Position Transitions",
+        xlabel="Current Position",
+        ylabel="Next Position",
+        xticklabels=red_door_pos_factor,
+        yticklabels=red_door_pos_factor,
+    )
+    
+    # B[4]: Blue door position transitions
+    my_plot_likelihood(
+        B[4][:, :, 0],
+        title="B[4] - Blue Door Position Transitions",
+        xlabel="Current Position",
+        ylabel="Next Position",
+        xticklabels=blue_door_pos_factor,
+        yticklabels=blue_door_pos_factor,
+    )   
+    
+    # B[5]: Joint action transitions
+    my_plot_likelihood( 
+        B[5][:, :, 0],
+        title="B[5] - Joint Action Transitions",
+        xlabel="Current Joint Action",
+        ylabel="Next Joint Action",
+        xticklabels=joint_policy_factor,
+        yticklabels=joint_policy_factor,
+    )
+
 
 
 
@@ -673,38 +655,44 @@ if VERBOSE:
 C = pymdp_utils.obj_array_zeros(num_obs)
 
 
-num_obs = [
-    len(self_pos_modality),
-    len(other_pos_modality),
-    len(door_state_modality),
-    len(other_intention_modality),
-    len(game_outcome_modality),
-]
 
-
-# Self position, other position, other intention modalities
+# Self position, other position, joint action modalities
 # No strong preference → uniform or zero.
 C[0][:] = 0.0
 C[1][:] = 0.0
-C[3][:] = 0.0
+C[5][:] = 0.0
 
 # Door state modality
 reward_map_door_state = {
    "red_closed_blue_closed":-0.01,
     "red_open_blue_closed": 2.5,
-    "red_closed_blue_open": -5.0,
-    "red_open_blue_open": 5.0
+    "red_closed_blue_open": -10.0,
+    "red_open_blue_open": 10.0
 }
 for i, label in enumerate(door_state_modality):
     C[2][i] = reward_map_door_state[label]
     
-# Game outcome modality
-C[4][:] = [+5.0, -5.0, 0.0]
+# near red door modality
+reward_map_near_red_door = {
+    "near": 1.0,
+    "far": -0.01,
+}   
+for i, label in enumerate(near_red_door_modality):
+    C[3][i] = reward_map_near_red_door[label]
 
+# near blue door modality
+reward_map_near_blue_door = {
+    "near": 1.0,
+    "far": -0.01,
+}
+for i, label in enumerate(near_blue_door_modality):
+    C[4][i] = reward_map_near_blue_door[label]
 
 temperature = 2.0
 for m in range(len(C)):
     C[m] = pymdp_softmax(C[m] / temperature)
+    
+ 
  
  
 if VERBOSE: 
@@ -712,8 +700,8 @@ if VERBOSE:
     print(f"C shape: {[C[m].shape for m in range(len(C))]}")
     for m in range(num_modalities):
         print(f"C[{m}] normalized: {np.isclose(np.sum(C[0]), 1.0)}")
+        pymdp_utils.plot_beliefs(C[m], title=f"C[{m}] - Reward Beliefs")
 
-# pymdp_utils.plot_beliefs(C[4])
 
 
 
@@ -723,14 +711,15 @@ D1[0] = np.zeros(num_states[0])
 D1[1] = np.zeros(num_states[1])
 D1[2] = np.zeros(num_states[2])
 D1[3] = np.zeros(num_states[3])
+D1[4] = np.zeros(num_states[4])
+D1[5] = np.zeros(num_states[5])
 
 D1[0][0] = 1.0
 D1[1][8] = 1.0
-D1[2][0] = 1.0
+D1[2][0] = 1.0  
 D1[3][:] = 1.0 / len(D1[3])
-
-
-
+D1[4][:] = 1.0 / len(D1[4])  # Uniform distribution over door positions
+D1[5][:] = 1.0 / len(D1[5])  # Uniform distribution over joint actions
 
 if VERBOSE:
     print("\n", "-" * 10 + "D Matrix Definition " + "-" * 10)
