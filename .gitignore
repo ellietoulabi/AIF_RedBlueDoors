@@ -1,7 +1,7 @@
 .venv/*
 !.venv/
-!.venv/pymdp/
-!.venv/pymdp/*
+!.venv/lib/python3.11/site-packages/pymdp/
+!.venv/lib/python3.11/site-packages/pymdp/*
 
 logs/
 */__pycache__/
