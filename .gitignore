@@ -1,5 +1,14 @@
 .venv/*
 !.venv/
+
+.venv/lib/*
+!.venv/lib/
+
+.venv/lib/python3.11/*
+!.venv/lib/python3.11/
+
+.venv/lib/python3.11/site-packages/*
+!.venv/lib/python3.11/site-packages/
 !.venv/lib/python3.11/site-packages/pymdp/
 !.venv/lib/python3.11/site-packages/pymdp/*
 
