@@ -97,7 +97,7 @@ class RedBlueDoorEnv(ParallelEnv):
         }
 
         for agent, action in actions.items():
-            if action in [0, 1, 2, 3]:
+            if action in [0, 1, 2, 3, 5]:
                 x, y = self.agent_positions[agent]
                 dx, dy = 0, 0
                 if action == 0:
@@ -108,34 +108,37 @@ class RedBlueDoorEnv(ParallelEnv):
                     dx = -1
                 elif action == 3:
                     dx = 1
+                elif action == 5:
+                    pass
                 new_pos = (x + dx, y + dy)
                 if self._valid_move(new_pos, self.agent_positions.values()):
                     self.agent_positions[agent] = new_pos
                 if self._is_near_door(
                     self.agent_positions[agent][0], self.agent_positions[agent][1]
                 ):
-                    rewards[agent] = 0.2
+                    rewards[agent] = 2.0
                     # print(f"Agent {agent} is near a door")
 
             elif action == 4:
                 x, y = self.agent_positions[agent]
                 if self._is_adjacent(x, y, self.red_door) and not self.red_door_opened:
                     self.red_door_opened = True
-                    rewards[agent] = 0.5
+                    rewards[agent] = 5.0
                     # print("Red door opened first :)")
                 elif self._is_adjacent(x, y, self.blue_door):
                     if not self.red_door_opened:
                         self.blue_door_opened = True
-                        rewards = {a: -1.0 for a in self.agents}
+                        rewards = {a: -10.0 for a in self.agents}
                         terminations = {a: True for a in self.agents}
                         # self.agents = []
                         # print("Blue door opened first :(")
                     elif self.red_door_opened and (not self.blue_door_opened):
                         self.blue_door_opened = True
-                        rewards = {a: 1.0 for a in self.agents}
+                        rewards = {a: 10.0 for a in self.agents}
                         terminations = {a: True for a in self.agents}
                         # self.agents = []
                         # print("Won :D")
+        
 
         self.step_count += 1
         if self.step_count >= self.max_steps:
@@ -270,11 +273,6 @@ class RedBlueDoorEnv(ParallelEnv):
         )
 
     def _is_near_door(self, x, y):
-        # neighbors = [(x + dx, y + dy)
-        #              for dx in [-1, 0, 1]
-        #              for dy in [-1, 0, 1]
-        #              if not (dx == 0 and dy == 0)]
-        # return any(pos in neighbors for pos in [self.red_door, self.blue_door])
         neighbors = [
             (x, y - 1),  # up
             (x, y + 1),  # down
@@ -287,43 +285,94 @@ class RedBlueDoorEnv(ParallelEnv):
         tx, ty = target
         return (abs(x - tx) == 1 and y == ty) or (abs(y - ty) == 1 and x == tx)
 
+    def is_adjacent_to_red(self, x, y):
+        """
+        Returns True if (x, y) is adjacent (4-neighborhood) to the red door.
+        """
+        rx, ry = self.red_door
+        return (abs(x - rx) == 1 and y == ry) or (abs(y - ry) == 1 and x == rx)
+
+    def is_adjacent_to_blue(self, x, y):
+        """
+        Returns True if (x, y) is adjacent (4-neighborhood) to the blue door.
+        """
+        bx, by = self.blue_door
+        return (abs(x - bx) == 1 and y == by) or (abs(y - by) == 1 and x == bx)
+
     def _get_obs(self):
         return {
             "agent_0": {
                 "position": np.array(self.agent_positions["agent_0"], dtype=np.int32),
-                "near_door": int(self._is_near_door(*self.agent_positions["agent_0"])),
-                "next_intention": self.get_next_intention(*self.agent_positions["agent_0"]),
+                "near_red_door": int(self.is_adjacent_to_red(*self.agent_positions["agent_0"])),
+                "near_blue_door": int(self.is_adjacent_to_blue(*self.agent_positions["agent_0"])),
+                # "next_intention": self.get_next_intention(*self.agent_positions["agent_0"]),
             },
             "agent_1": {
                 "position": np.array(self.agent_positions["agent_1"], dtype=np.int32),
-                "near_door": int(self._is_near_door(*self.agent_positions["agent_1"])),
-                "next_intention": self.get_next_intention(*self.agent_positions["agent_1"]),
+                "near_red_door": int(self.is_adjacent_to_red(*self.agent_positions["agent_1"])),
+                "near_blue_door": int(self.is_adjacent_to_blue(*self.agent_positions["agent_1"])),
+                # "next_intention": self.get_next_intention(*self.agent_positions["agent_1"]),
             },
             "red_door_opened": int(self.red_door_opened),
             "blue_door_opened": int(self.blue_door_opened),
         }
 
 
-    def get_next_intention(self, x, y):
-        """
-        Returns:
-            'red_door_next' if agent is close to red door only
-            'blue_door_next' if agent is close to blue door only
-            'idle' if close to both or neither
-        """
-        grid_size = max(self.width, self.height)
-        rx, ry = self.red_door
-        bx, by = self.blue_door
-        dist_red = ((x - rx) ** 2 + (y - ry) ** 2) ** 0.5
-        dist_blue = ((x - bx) ** 2 + (y - by) ** 2) ** 0.5
-        threshold = 0.5 * grid_size
 
-        close_red = dist_red < threshold
-        close_blue = dist_blue < threshold
 
-        if close_red and not close_blue:
-            return 'open_red_next'
-        elif close_blue and not close_red:
-            return 'open_blue_next'
-        else:
-            return 'idle'
+    # def step(self, actions):
+
+    #     rewards = {agent: -0.1 for agent in self.agents}
+    #     terminations = {agent: False for agent in self.agents}
+    #     truncations = {agent: False for agent in self.agents}
+    #     infos = {
+    #         "step": None,
+    #         "agent_0": {
+    #             "action": None,
+    #             "action_meaning": None,
+    #             "reward": None,
+    #             "cumulative_reward": None,
+    #         },
+    #         "agent_1": {
+    #             "action": None,
+    #             "action_meaning": None,
+    #             "reward": None,
+    #             "cumulative_reward": None,
+    #         },
+    #         "map": None,
+    #     }
+
+    #     for agent, action in actions.items():
+    #         if action in [0, 1, 2, 3, 4]:
+    #             x, y = self.agent_positions[agent]
+    #             dx, dy = 0, 0
+    #             if action == 0:
+    #                 dy = -1
+    #             elif action == 1:
+    #                 dy = 1
+    #             elif action == 2:
+    #                 dx = -1
+    #             elif action == 3:
+    #                 dx = 1
+    #             elif action == 4:
+    #                 pass
+    #             new_pos = (x + dx, y + dy)
+    #             if self._valid_move(new_pos, self.agent_positions.values()):
+    #                 self.agent_positions[agent] = new_pos
+    #             if self._is_near_door(
+    #                 self.agent_positions[agent][0], self.agent_positions[agent][1]
+    #             ):
+    #                 rewards[agent] = 0.2
+    #                 # print(f"Agent {agent} is near a door")
+
+
+    #     self.step_count += 1
+    #     if self.step_count >= self.max_steps:
+    #         truncations = {a: True for a in self.agents}
+    #         rewards = {a: -1.0 for a in self.agents}
+
+    #     self._update_cumulative_rewards(rewards)
+
+    #     # self.agents = []
+    #     self._fill_info(infos, actions, rewards)
+    #     return self._get_obs(), rewards, terminations, truncations, infos

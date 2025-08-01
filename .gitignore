@@ -1,4 +1,8 @@
-.venv/
+.venv/*
+!.venv/
+!.venv/pymdp/
+!.venv/pymdp/*
+
 logs/
 */__pycache__/
 runs/wandb/

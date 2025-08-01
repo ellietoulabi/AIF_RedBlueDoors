@@ -6,13 +6,14 @@ import copy
 from tqdm import trange
 import sys
 import matplotlib.pyplot as plt
+import time
 
 from pymdp.agent import Agent
 
 sys.path.append("..")
 from envs.redbluedoors_env.ma_redbluedoors import RedBlueDoorEnv
-from agents.aif_models import model_2
-from agents.aif_models.model_2 import convert_obs_to_active_inference_format
+from agents.aif_models import model_5
+from agents.aif_models.model_5 import D1, convert_obs_to_active_inference_format
 from utils.env_utils import get_config_path
 from utils.logging_utils import create_experiment_folder
 
@@ -25,9 +26,9 @@ for k, v in log_paths.items():
 # Main script - simple single agent AIF loop
 if __name__ == "__main__":
     # Parameters
-    seed = 42
-    episodes = 5
-    max_steps = 100
+    seed = 1
+    episodes =50
+    max_steps = 150
     
     # Set random seeds
     np.random.seed(seed)
@@ -37,18 +38,23 @@ if __name__ == "__main__":
     
     # Create AIF agent
     aif_agent = Agent(
-        A=model_2.MODEL["A"],
-        B=model_2.MODEL["B"],
-        C=model_2.MODEL["C"],
-        D=model_2.MODEL["D"],
-        pA=model_2.MODEL["pA"],
-        inference_algo="MMP",
-        policy_len=2,
-        inference_horizon=2,
-        sampling_mode="marginal",
+        A=model_5.MODEL["A"],
+        B=model_5.MODEL["B"],
+        C=model_5.MODEL["C"],
+        D=model_5.MODEL["D"],
+        # pA=model_5.MODEL["pA"],
+        inference_algo="VANILLA",
+        policy_len=1,
+        inference_horizon=1,
+        sampling_mode="full",
         action_selection="stochastic",
         alpha=0.1,
+        gamma=16.0,
+        # policies= model_5.MODEL["Policies"],
+        # use_states_info_gain=False
+
     )
+    
 
     # Simple logging
     log_filename = f"single_agent_aif_seed_{seed}.csv"
@@ -64,32 +70,58 @@ if __name__ == "__main__":
 
     for episode in trange(episodes, desc=f"Episode"):
         # Get config for this episode
-        config_path = ig_paths =  "../envs/redbluedoors_env/configs/config.json"
+        config_path =   "../envs/redbluedoors_env/configs/config.json"
         env = RedBlueDoorEnv(max_steps=max_steps, config_path=config_path)
         
         # Reset environment
         obs, _ = env.reset()
-        aif_obs = convert_obs_to_active_inference_format(obs,"agent_0")
+        # obs, rewards, terminations, truncations, infos = env.step({"agent_0": 3, "agent_1": 1}) # Initial action to start the episode
+        # obs, rewards, terminations, truncations, infos = env.step({"agent_0": 3, "agent_1": 1}) # Initial action to start the episode
+
+        # print(obs)
+        
+        aif_obs = convert_obs_to_active_inference_format(obs, "agent_0")
+        # print(aif_obs)
         total_reward = 0
         step_rewards = []  # Store rewards for this episode
         
-        # Reset agent's initial beliefs
-        aif_agent.D = copy.deepcopy(model_2.MODEL["D"])
+        
+        
 
         for step in range(max_steps):
             # AIF inference loop
+            # print("Infer state start:", time.time())
             qs = aif_agent.infer_states(aif_obs)
-            aif_agent.D = qs
+            # print("Infer state end:", time.time())
+
+            # aif_agent.D = qs
+            # print("Infer policies start:", time.time())
             q_pi, G = aif_agent.infer_policies()
+            # print("Infer policies end:", time.time())
 
             # Sample action
+            # print("Sample action start:", time.time())
             action = aif_agent.sample_action()
+            # print("Sample action end:", time.time())
+            # print(f"Episode {episode}, Step {step}, Action: {action}")
+            # print(f"Q_pi: {q_pi}")
+            
             action_int = int(action[0])
+            # print(qs.shape)
+            
+            
+            for f in range(len(qs)):
+                p = np.argmax(qs[f])
+                print(f"Factor {f}, Max Posterior: {p}")
+            from pymdp.utils import plot_beliefs
+            # plot_beliefs(q_pi, title=f"Episode {episode}, Step {step} - Q_pi")
+            print("action:", action_int)
+            
             
             # Take action (single agent)
-            action_dict = {"agent_0": action_int}
+            action_dict = {"agent_0": action_int, "agent_1": 5}  # Agent 1 does nothing
             obs, rewards, terminations, truncations, infos = env.step(action_dict)
-
+            print(infos["map"])
             # Get reward
             reward = rewards.get("agent_0", 0)
             total_reward += reward
@@ -102,6 +134,7 @@ if __name__ == "__main__":
 
             # Check if episode is done
             if any(terminations.values()) or any(truncations.values()):
+               
                 break
 
             # Update observation for next step
